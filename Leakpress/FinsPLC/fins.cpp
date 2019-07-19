@@ -141,13 +141,18 @@ bool Fins::WriteDM(uint16_t address, uint16_t data[], uint16_t count)
 //fins->WriteDM((uint16_t)170, data, 6);
 bool Fins::WriteDM(uint16_t address, uint8_t data[], uint16_t count, bool reserve)
 {
+	uint8_t *byteData= new uint8_t(count);
+	memcpy(byteData, data, count);
+
 	for (int i = 0; reserve && i < count - 1; i += 2) {
-		uint8_t byte = data[i];
-		data[i] = data[i + 1];
-		data[i + 1] = byte;
+		uint8_t byte = byteData[i];
+		byteData[i] = byteData[i + 1];
+		byteData[i + 1] = byte;
 	}
 
-	bool bWirte = MemoryAreaWrite(DM, address, 0, count, data);
+	bool bWirte = MemoryAreaWrite(DM, address, 0, count, byteData);
+	delete byteData;
+
 	return bWirte;
 }
 
