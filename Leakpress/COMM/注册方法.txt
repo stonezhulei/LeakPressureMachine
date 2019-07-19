@@ -1,0 +1,1 @@
+先将MSCOMM32.OCX组件复制到c:\windows\SysWOW64下面，再运行“regsvr32 c:\windows\SysWOW64\MSCOMM32.OCX”注册
