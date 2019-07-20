@@ -13,6 +13,7 @@ IMPLEMENT_DYNAMIC(DlgChannleShow, CDialogEx)
 
 DlgChannleShow::DlgChannleShow(CWnd* pParent /*=NULL*/)
 	: CDialogEx(DlgChannleShow::IDD, pParent)
+	, m_pthread(NULL)
 {
 }
 
@@ -227,7 +228,7 @@ void DlgChannleShow::StartThread(UINT (WINAPI *pThread) (LPVOID pParam))
 {
 	if (!m_flagThreadExit && !m_flagThreadStart)
 	{
-		AfxBeginThread((AFX_THREADPROC)pThread, (LPVOID)nChannleID, THREAD_PRIORITY_IDLE);
+		m_pthread = AfxBeginThread((AFX_THREADPROC)pThread, (LPVOID)nChannleID, THREAD_PRIORITY_IDLE);
 	}
 }
 
@@ -236,11 +237,8 @@ void DlgChannleShow::ExitThread()
 {
 	if (!m_flagThreadStart) // 线程未启动
 		return;
-	m_flagThreadExit = true;
-	while (m_flagThreadStart) // 等待线程退出
-	{
-		Sleep(50);
-	}
+	m_flagThreadExit = true;	
+	WaitForSingleObject(m_pthread->m_hThread, INFINITE);
 	m_flagThreadExit = false;
 }
 

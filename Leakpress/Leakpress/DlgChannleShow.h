@@ -15,14 +15,6 @@ public:
 // 对话框数据
 	enum { IDD = IDD_DlgChannleShow };
 
-	// 只允许线程使用
-	friend UINT WINAPI Thread1(LPVOID pParam);
-	friend UINT WINAPI Thread2(LPVOID pParam);
-	friend UINT WINAPI Thread3(LPVOID pParam);
-	friend UINT WINAPI Thread4(LPVOID pParam);
-	friend UINT WINAPI Thread5(LPVOID pParam);
-	friend UINT WINAPI Thread6(LPVOID pParam);
-
 private:	
 	int nChannleID;
 	CString mChannleName;
@@ -36,6 +28,8 @@ private:
 	CFont m_titleFont;
 	CFont m_labelFont;
 	CFont m_editFont;
+
+	CWinThread *m_pthread;
 
 private:
 	void GetPara();

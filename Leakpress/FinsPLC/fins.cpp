@@ -24,8 +24,8 @@ Fins::Fins(TransportType TType) : _finsCmd(NULL)
 
 Fins::~Fins()
 {
-	//Close();
 	delete _finsCmd;
+	_finsCmd = NULL;
 }
 
 bool Fins::Connect()
