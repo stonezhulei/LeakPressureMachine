@@ -57,22 +57,54 @@ void Ateq::OnReceive()
 	unsigned long uReadLength = Read(hexarray, 100, 100);
 	if (uReadLength > 0)
 	{
-		if (id == 0 || id == 1) {
+		CString device_prefix = mMainWnd->getDevicePrefix(id);
+		if ("G" == device_prefix) {
 			parseHigh(hexarray);
+		} else if ("D" == device_prefix) {
+			parseLow(hexarray, uReadLength);
+		} else if ("Y" == device_prefix) {
+			parsePress(hexarray, uReadLength);
+		} else {
+			return;
 		}
-		else {
-			parse(hexarray, uReadLength);
-		}
-		
+
+#ifdef _DEBUG
 		writeAteqLog(hexarray, uReadLength);
+#endif
 	}
+}
+
+void Ateq::parsePress(const unsigned char* hexarray, int length)
+{
+	STATE state = ATEQ_REPLY;
+
+	UINT press = 0;
+	UINT position = 0;
+
+	bool check = length >= 66;
+
+	// 计算校验和
+	BYTE sum = 0; 
+	for (int i = 0; check && i < 65; i++) {
+		sum += hexarray[i];
+	}
+
+	check = check ? (sum == hexarray[65]) : false;
+
+	if (check) {
+		state = PRESS_RESULT;
+		press = (hexarray[22] << 24) + (hexarray[23] << 16)  + (hexarray[24] << 8) + hexarray[25];
+		position = (hexarray[26] << 24) + (hexarray[27] << 16)  + (hexarray[28] << 8) + hexarray[29];
+	}
+
+	ATEQ_EVENT *e = new ATEQ_EVENT(id, state, press, position);
+	::PostMessage(mMainWnd->GetSafeHwnd(), WM_USER_EVENT_MSG, 0, (LPARAM)e);
 }
 
 void Ateq::parseHigh(const unsigned char* hexarray)
 {
-	vector<CString> splitVec = Util::SpiltString((char *)hexarray, 0x09);
+	vector<CString> splitVec = Util::SpiltString((char *)hexarray, 0x09); // Tab
 	
-
 	LEAK_PARAMETERS leakFrame;
 	memset(&leakFrame, 0, sizeof(LEAK_PARAMETERS));
 
@@ -90,7 +122,7 @@ void Ateq::parseHigh(const unsigned char* hexarray)
 }
 
 
-void Ateq::parse(const unsigned char* hexarray, int length)
+void Ateq::parseLow(const unsigned char* hexarray, int length)
 {
 	// 不是需要的数据
 	if (hexarray[0] != 0xFF || hexarray[1] != 0x03) {
@@ -142,7 +174,6 @@ void Ateq::parse(const unsigned char* hexarray, int length)
 	{
 		wStep = (wStep | hexarray[8]) << 8;//测试状态
 		wStep = wStep | hexarray[7];
-		/*	wStep = (wStep >> 5) & 1;*/
 		leakFrame.wTestState = wStep;	
 
 		dwPrg = (dwPrg | hexarray[4]) << 8;

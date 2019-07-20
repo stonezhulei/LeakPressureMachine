@@ -184,10 +184,42 @@ void FileManager::WriteStringToIni(CString m_szFileName, CString strSection, CSt
 	WritePrivateProfileString(strSection,strSectionKey,cfg,m_szFileName);
 }
 
-//读取Seletion下的所有键值对 "键-值"
-std::vector<CString> FileManager::ReadChildsOnGroup(CString mPath,CString mGroupName )
+vector<CString> FileManager::ReadSectionNames(CString mPath)
 {
 	std::vector<CString>  mResultVec;
+
+	TCHAR chSectionNames[2048]={0}; 
+	TCHAR *pSectionName=NULL;
+	int i;  
+	int j=0;  
+
+	GetPrivateProfileSectionNames(chSectionNames, 2048, mPath);
+
+	for(i=0;i<2048;i++,j++)
+	{
+		if(chSectionNames[0]=='\0')
+			break;
+		if(chSectionNames[i]=='\0')
+		{
+			pSectionName=&(chSectionNames[i-j]);
+			j=-1;
+
+			mResultVec.push_back(pSectionName);
+			//AfxMessageBox(pSectionName);
+			if(chSectionNames[i+1]==0)
+			{
+				break;// 当两个相邻的字符都是0时，则所有的节名都已找到，循环终止
+			}
+		}
+	}
+
+	return mResultVec;
+}
+
+//读取Section下的所有键值对 "键-值"
+std::vector<CString> FileManager::ReadChildsOnGroup(CString mPath, CString mGroupName)
+{
+	vector<CString>  mResultVec;
 	int i;  
 	int iPos=0;
 	CString strKeyValue;

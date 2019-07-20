@@ -52,8 +52,8 @@ namespace FileManager
 	void	WriteDoubleToIni(CString strFilePath, CString strSection, CString strSectionKey, double cfg);
 	void	WriteStringToIni(CString strFilePath, CString strSection, CString strSectionKey, CString cfg);
 
-	vector<CString> ReadChildsOnGroup(CString mPath,CString mGroupName);
-
+	vector<CString> ReadSectionNames(CString mPath);
+	vector<CString> ReadChildsOnGroup(CString mPath, CString mGroupName);
 
 	//文本操作 TXT  CSV
 	BOOL SaveFile(CString str, CString strFilePath, BOOL app=TRUE); // 保存字符串
