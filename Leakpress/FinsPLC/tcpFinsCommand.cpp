@@ -94,6 +94,7 @@ namespace OmronPlc
 	tcpFinsCommand::~tcpFinsCommand()
 	{
 		delete transport;
+		transport = NULL;
 	}
 
 	bool tcpFinsCommand::PLCConnect()

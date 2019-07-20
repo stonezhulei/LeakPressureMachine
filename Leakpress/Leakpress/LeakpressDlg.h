@@ -6,9 +6,9 @@
 
 #include "Ateq.h"
 #include "fins.h"
-#include <vector>
 #include "pthread.h"
 #include "DlgChannleShow.h"
+#include <vector>
 #include <direct.h>
 
 using namespace std;
@@ -22,13 +22,7 @@ public:
 	CLeakpressDlg(CWnd* pParent = NULL);	// 标准构造函数
 	virtual ~CLeakpressDlg();
 
-	// 只允许线程使用
-	friend UINT WINAPI Thread1(LPVOID pParam);
-	friend UINT WINAPI Thread2(LPVOID pParam);
-	friend UINT WINAPI Thread3(LPVOID pParam);
-	friend UINT WINAPI Thread4(LPVOID pParam);
-	friend UINT WINAPI Thread5(LPVOID pParam);
-	friend UINT WINAPI Thread6(LPVOID pParam);
+	friend UINT WINAPI ThreadTestProcess(LPVOID pParam);
 
 // 对话框数据
 	enum { IDD = IDD_LEAKPRESS_DIALOG };
@@ -44,7 +38,10 @@ protected:
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg LRESULT OnAteqEventMsg(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
 
 public:
@@ -78,9 +75,13 @@ public:
 	bool getAlarm(int id);
 	void setAlarm(int id, bool alarm);
 
-	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName);
+	void WriteALAResult(int id);
+	void WriteResult(int id, bool alarm = false);
+	CString CreateFileName(int id, CString &dt);
 
 	CString getDevicePrefix(int id); // 获取外设代号
+
+	bool needExit();
 
 private:
 	Fins *fins;
@@ -96,12 +97,17 @@ private:
 	bool isWindowLoaded;
 	DlgChannleShow* mDlgChannleShow[NUM];
 
+	bool exit;
+	vector<pair<int, void *>> mThreadParas;
+	CWinThread *pthreads[NUM];
+	CWinThread *pThreadListener;
+
+	CString errorStr;
+
 private:
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
-	afx_msg LRESULT OnAteqEventMsg(WPARAM wParam, LPARAM lParam);
-	void OnTest(int id, bool bstart, CString device_prefix);
-	void OnHighTest(int id, bool bstart, bool isAteqHigh = true);
-	void InitTabShow();
 	void MoveCtrl();
+	void InitTabShow();
+	void OnAlarm(int id);
+	void OnTest(int id);
+	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, bool alarm = false);
 };

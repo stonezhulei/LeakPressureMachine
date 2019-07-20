@@ -295,13 +295,14 @@ BOOL FileManager::SaveFile(vector<CString> strVec, CString strFilePath, CString 
 	return SaveFile(str, strFilePath, app);
 }
 
-BOOL FileManager::SaveFile(CString str, CString strFilePath, BOOL app)
+BOOL FileManager::SaveFile(CString str, CString strFilePath, BOOL app, BOOL hide)
 {
 	ofstream of;
 	ios_base::openmode mode = app ? ios::app : ios::trunc;
 	of.open(strFilePath, mode);
 	if (!of.is_open())
 	{
+		//ASSERT(FALSE);
 		return FALSE;
 	}
 
@@ -311,26 +312,52 @@ BOOL FileManager::SaveFile(CString str, CString strFilePath, BOOL app)
 	of.write((const TCHAR *)datas, strlen(datas));
 	of.close();
 	str.ReleaseBuffer();
+
+	//DWORD dwAttributes = GetFileAttributes(strFilePath);
+	DWORD dwAttributes = hide ? FILE_ATTRIBUTE_HIDDEN : FILE_ATTRIBUTE_NORMAL;
+	SetFileAttributes(strFilePath, dwAttributes);
+
 	return TRUE;
+}
+
+BOOL FileManager::SaveFile(CString lineString, CString path, CString bkPath, BOOL app)
+{
+	BOOL success = TRUE;
+	if (CheckFileExist(bkPath)) {
+		FileManager::SaveFile(lineString, bkPath, true, true);
+		success = DeleteFile(path); // 存在备份文件，尝试删除原文件
+		if (success) {
+			success = !rename(bkPath, path);
+			SetFileAttributes(path, FILE_ATTRIBUTE_NORMAL);
+		}
+	} else {
+		success = FileManager::SaveFile(lineString, path, true);
+		if (!success) {
+			success = CopyFile(path, bkPath, FALSE);
+		}
+	}
+
+	return success;
 }
 
 BOOL FileManager::ReadFileByLine(vector<CString> &strVec, CString strFilePath)
 {
-	ifstream of;
-	TCHAR datas[256];
-	of.open(strFilePath, ios::out);
-	if (!of.is_open())
-	{
+	ifstream ifs;
+	ifs.open(strFilePath, ios::in);
+	if (!ifs.is_open()) {
 		//AfxMessageBox(_T("文件打开失败"));
+		ASSERT(FALSE);
 		return FALSE;
 	}
-	while(of)
+
+	TCHAR datas[256];
+	while (ifs)
 	{
-		of.getline((TCHAR *)datas, 256);
+		ifs.getline((TCHAR *)datas, 256);
 		strVec.push_back(datas);
 	}
 
-	of.close();
+	ifs.close();
 	return TRUE;
 }
 

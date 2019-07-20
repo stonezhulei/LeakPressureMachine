@@ -54,6 +54,7 @@ udpFinsCommand::udpFinsCommand(uint8_t ServiceID) :
 udpFinsCommand::~udpFinsCommand()
 {
 	delete transport;
+	transport = NULL;
 }
 
 bool udpFinsCommand::PLCConnect()
