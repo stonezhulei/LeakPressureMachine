@@ -72,14 +72,15 @@ public:
 	RESULT getResult(int id);
 	void setResult(int id, RESULT *r);
 
-	bool getAlarm(int id);
-	void setAlarm(int id, bool alarm);
+	ALA_TYPE getAlarmType(int id);
+	void setAlarmType(int id, ALA_TYPE alarmType);
 
-	void WriteALAResult(int id);
-	void WriteResult(int id, bool alarm = false);
+	void WriteALAResult(int id, ALA_TYPE alarmType);
+	void WriteResult(int id, CString alarmStr = "", bool alarm = false);
 	CString CreateFileName(int id, CString &dt);
 
 	CString getDevicePrefix(int id); // 获取外设代号
+	CString getALAString(ALA_TYPE alarmType); // 获取报警字符串
 
 	bool needExit();
 
@@ -92,7 +93,7 @@ private:
 
 	ATEQ_STATE ateqFlag[NUM];
 
-	bool deviceAlarm[NUM];
+	ALA_TYPE deviceAlarm[NUM];
 
 	bool isWindowLoaded;
 	DlgChannleShow* mDlgChannleShow[NUM];
@@ -102,12 +103,10 @@ private:
 	CWinThread *pthreads[NUM];
 	CWinThread *pThreadListener;
 
-	CString errorStr;
-
 private:
 	void MoveCtrl();
 	void InitTabShow();
 	void OnAlarm(int id);
 	void OnTest(int id);
-	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, bool alarm = false);
+	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, CString alarmStr, bool alarm);
 };

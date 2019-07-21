@@ -162,3 +162,11 @@ typedef enum PLCADDR_DEFINE_YPRESS {
 	PressPCFileName,
 
 } WADDR;
+
+// 报警类型
+typedef enum PLC_ALA_TYPE {
+	ALA_NO = 0, // 无报警
+	ALA_PLC_TYPE1,
+	ALA_PLC_TYPE2,
+
+} ALA_TYPE;
