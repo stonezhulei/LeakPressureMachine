@@ -5,6 +5,7 @@
 #define NUM 6		  // 外设个数
 #define PLCADDSIZE 10     // 单个外设挂接的 PLC 最大寄存器个数
 #define FILE_NAME_LENGTH 6 // PLC 文件名字节数
+#define PRESS_DATA_LENGTH 66 // 压机数据长度
 
 #define	MASK(i)				(1<<(i))		// conversion bit--> masque
 #define GETBIT(x,n)			(((x)>>(n))&1)
@@ -30,7 +31,7 @@ typedef struct LEAK_PARAMETERS
 
 typedef struct PLC_ADDR
 {
-	BYTE address[PLCADDSIZE];
+	UINT address[PLCADDSIZE];
 
 } PLC_ADDR;
 
@@ -114,7 +115,7 @@ typedef enum CTRL_STATE {
 	PLC_ALA = 9,
 	PC_StartLowTest = 5,
 	PC_ResultSended = 10,
-	PC_ClearALA,
+	PC_ClearALA = 0,
 } CTRL_STATE;
 
 // 通用寄存器
@@ -163,10 +164,31 @@ typedef enum PLCADDR_DEFINE_YPRESS {
 
 } WADDR;
 
-// 报警类型
+/* 报警类型    Low   Type1: MachineError   Type2 CYLError  Type3 500000
+               High  Type1: MachineError   Type2 CYLError  Type3 500000    
+			   Press Type1: MachineError   Type2 0         Type3 beiyong
+				  */
 typedef enum PLC_ALA_TYPE {
 	ALA_NO = 0, // 无报警
-	ALA_PLC_TYPE1,
-	ALA_PLC_TYPE2,
+	ALA_P1_TYPE1,
+	ALA_P1_TYPE2,
+	ALA_P1_TYPE3,
+	ALA_G1_TYPE1,
+	ALA_G1_TYPE2,
+	ALA_G1_TYPE3,
+	ALA_G2_TYPE1,
+	ALA_G2_TYPE2,
+	ALA_G2_TYPE3,
+	ALA_L1_TYPE1,
+	ALA_L1_TYPE2,
+	ALA_L1_TYPE3,
+	ALA_L2_TYPE1,
+	ALA_L2_TYPE2,
+	ALA_L2_TYPE3,
+	ALA_L3_TYPE1,
+	ALA_L3_TYPE2,
+	ALA_L3_TYPE3,
 
 } ALA_TYPE;
+
+

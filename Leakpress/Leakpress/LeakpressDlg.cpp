@@ -193,7 +193,7 @@ void CLeakpressDlg::LoadConfig()
 			CString mKeyValueStr = childs[k];
 			CString mkeyStr = mKeyValueStr.Left(mKeyValueStr.Find("="));
 			CString mValueStr = mKeyValueStr.Mid(mKeyValueStr.Find("=") + 1);
-			addr[i].address[k] = (BYTE)atoi(mValueStr);
+			addr[i].address[k] = (UINT)atoi(mValueStr);
 		}
 	}
 
@@ -468,6 +468,7 @@ void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 			fins->WriteDM((uint16_t)addr[id].address[LowLeakPCLeakValue], (uint16_t)(r.dwLeakValue / 100));
 			fins->WriteDM((uint16_t)addr[id].address[LowLeakPCFileName], r.fileName, FILE_NAME_LENGTH);
 
+
 			// 读取 P1 P2
 			WORD urData = 0xff;
 			fins->ReadDM((uint16_t)addr[id].address[LowLeakPCValueTest1], urData); r.dwTestPress1 = urData * 10;
@@ -476,9 +477,11 @@ void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 		}
 		else if ("Y" == device_prefix) {
 			pthread_mutex_lock(&plc_mutex);
+
+			uint16_t data = (r.dwPosition % 10 >= 5) ? (r.dwPosition / 10 + 1) : r.dwPosition / 10; // 四舍五入
 			fins->WriteDM((uint16_t)addr[id].address[MESPressPCcontrol], (uint16_t)(PC_ResultSended));
-			fins->WriteDM((uint16_t)addr[id].address[PressPCPressData], (uint16_t)(r.dwPress / 10));
-			fins->WriteDM((uint16_t)addr[id].address[PressPCPressPosition], (uint16_t)(r.dwPosition / 100));
+			fins->WriteDM((uint16_t)addr[id].address[PressPCPressData], (uint16_t)(r.dwPress));
+			fins->WriteDM((uint16_t)addr[id].address[PressPCPressPosition], (uint16_t)(data));
 			fins->WriteDM((uint16_t)addr[id].address[PressPCFileName], r.fileName, FILE_NAME_LENGTH);
 			pthread_mutex_unlock(&plc_mutex);
 		}
@@ -487,6 +490,9 @@ void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 		}
 
 		setResult(id, &r);
+	}
+	else {
+		printf("%s: errorCode = %s\n", getDevicePrefix2(id), alarmStr);
 	}
 
 	WriteResultToFile(para.fileSaveDir, dt, r, fileName, alarmStr, alarm);
@@ -567,6 +573,13 @@ CString CLeakpressDlg::getDevicePrefix(int id)
 	CString device_prefix = para.deviceName[id].Left(1);
 	return device_prefix;
 }
+
+CString CLeakpressDlg::getDevicePrefix2(int id)
+{
+	CString device_prefix = para.deviceName[id].Left(2);
+	return device_prefix;
+}
+
 
 void CLeakpressDlg::SendTestPress1(int id)
 {
@@ -686,6 +699,7 @@ void CLeakpressDlg::OnTest(int id)
 {
 	bool bstart = false;
 	CString device_prefix = getDevicePrefix(id);
+	CString device_name = getDevicePrefix2(id);
 
 	// 1.查询 PLC 复位信号
 	do 
@@ -696,7 +710,7 @@ void CLeakpressDlg::OnTest(int id)
 	} while (!bstart);
 
 
-	printf("====start %d====\n", id + 1);
+	printf("%s：====start====\n", device_name);
 	ResetAteqState(id);
 
 	if ("D" == device_prefix) {
@@ -717,11 +731,11 @@ void CLeakpressDlg::OnTest(int id)
 		}
 
 		if (error) {
-			puts("2 段漏气");
+			printf("%s：2 段漏气\n", device_name);
 			return;
 		}
 		else {
-			puts("====2 段稳压结束====");
+			printf("%s：====2 段稳压结束====\n", device_name);
 			//Sleep(1000);
 		}
 
@@ -731,7 +745,7 @@ void CLeakpressDlg::OnTest(int id)
 			Sleep(100);
 		}
 
-		puts("====查询2 段结果====");
+		printf("%s：====查询2 段结果====\n", device_name);
 
 		// 4.查询 2 段结果
 		do {
@@ -740,7 +754,7 @@ void CLeakpressDlg::OnTest(int id)
 			Sleep(100);
 		} while (!IsAteqStateMatch(id, ATEQ_RESULT_1, false));
 
-		puts("等待 3 段稳压");
+		printf("%s：等待 3 段稳压\n", device_name);
 
 		// 5. 等待 3 段稳压
 		do {
@@ -750,7 +764,7 @@ void CLeakpressDlg::OnTest(int id)
 		} while (!IsAteqStateMatch(id, ATEQ_STABLE_2, false));
 
 		if (QueryAteqState(id) == ATEQ_STABLE_2) {
-			puts("sending test press");
+			printf("%s：sending test press\n", device_name);
 		}
 
 		// 6. 3 段稳压，一直发送结果
@@ -761,30 +775,31 @@ void CLeakpressDlg::OnTest(int id)
 			SendTestPress(id);
 		}
 
-		puts("====3 段稳压结束====");
+		printf("%s：====3 段稳压结束====\n", device_name);
 	}
 
 	// 7.等待 PLC 获取结果
-	puts("等待 PLC 读取结果");
+	printf("%s：等待 PLC 读取结果\n", device_name);
 	while (!IsGetResult(id)) {
 		CHECK_THREAD_RESET(id)
 		Sleep(200);
 	}
 
 	// 8.查询压机结果
-	puts("query press result");
+	printf("%s：query press result\n", device_name);
 	if ("Y" == device_prefix) {
+		QueryPressResult(id);
 		while (!IsAteqStateMatch(id, PRESS_RESULT, false)) {
 			CHECK_THREAD_RESET(id)
-			QueryPressResult(id);
+			//QueryPressResult(id);
 			Sleep(100);
 		}
 	}  
 
-	puts("send result");
+	printf("%s：send result\n", device_name);
 	SendResult(id); // 给 PLC 发送结果
 
-	puts("waiting end");
+	printf("%s：waiting end\n", device_name);
 
 	// 8.等待 PLC 结束
 	while (!IsEndState(id)) {
@@ -794,7 +809,7 @@ void CLeakpressDlg::OnTest(int id)
 
 	bstart = false;
 
-	puts("====end====");
+	printf("%s：====end====\n", device_name);
 }
 
 void CLeakpressDlg::OnAlarm(int id)
@@ -804,6 +819,7 @@ void CLeakpressDlg::OnAlarm(int id)
 	while (!needExit() && (alarmType = getAlarmType(id))) {
 		if (!bFirstAlarm) {
 			WriteALAResult(id, alarmType);
+			ResetClearAlarm(id);
 		}
 		bFirstAlarm = true;
 	}
@@ -870,18 +886,55 @@ void CLeakpressDlg::setAlarmType(int id, ALA_TYPE alarmType)
 	pthread_mutex_unlock(&ala_mutex);
 }
 
+void CLeakpressDlg::ResetClearAlarm(int id)
+{
+	pthread_mutex_lock(&plc_mutex);
+	fins->WriteDM((uint16_t)addr[id].address[ALA], (uint16_t)(PC_ClearALA));
+	pthread_mutex_unlock(&plc_mutex);
+}
+
+
 CString CLeakpressDlg::getALAString(ALA_TYPE alarmType)
 {
 	CString alarmStr;
 	if (alarmType == ALA_NO) {
-	} else if (alarmType == ALA_PLC_TYPE1) {
-		alarmStr = "G1";
-	} else if (alarmType == ALA_PLC_TYPE2) {
-		alarmStr = "G2";
-	} else {
+	} else if (alarmType == ALA_P1_TYPE1) {
 		alarmStr = "Error";
+	} else if (alarmType == ALA_P1_TYPE2) {
+		alarmStr = "0";
+	} else if(alarmType == ALA_P1_TYPE3){
+		alarmStr = "";      
+	}else if (alarmType == ALA_G1_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_G1_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_G1_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_G2_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_G2_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_G2_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_L1_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_L1_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_L1_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_L2_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_L2_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_L2_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_L3_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_L3_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_L3_TYPE3) {
+		alarmStr = "50000";
 	}
-
 	return alarmStr;
 }
 

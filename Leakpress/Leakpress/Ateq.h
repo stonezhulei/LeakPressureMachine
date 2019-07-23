@@ -46,5 +46,7 @@ private:
 	int id;
 	CLeakpressDlg *mMainWnd;
 	CLogFile logger;
+	unsigned char data[66];
+	int recvlength;
 };
 
