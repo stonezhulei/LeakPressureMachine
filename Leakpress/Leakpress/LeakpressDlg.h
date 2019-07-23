@@ -80,8 +80,10 @@ public:
 	CString CreateFileName(int id, CString &dt);
 
 	CString getDevicePrefix(int id); // 获取外设代号
+	CString getDevicePrefix2(int id);
 	CString getALAString(ALA_TYPE alarmType); // 获取报警字符串
 
+	void ResetClearAlarm(int id);
 	bool needExit();
 
 private:
