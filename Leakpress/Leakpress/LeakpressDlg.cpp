@@ -14,7 +14,7 @@
 #endif
 
 #define CHECK_THREAD_RESET(id) \
-	if (getAlarm(id) || needExit()) { \
+	if (getAlarmType(id) || needExit()) { \
 		return; \
 	} 
 
@@ -31,7 +31,6 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CLeakpressDlg::IDD, pParent)
 	, fins(new Fins(TransportType::Udp))
 	, isWindowLoaded(false)
-	, errorStr("error")
 	, exit(false)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
@@ -45,9 +44,9 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 
 	for (int i=0;i<NUM;i++) {
 		mThreadParas.push_back(make_pair(i, this));
+		setAlarmType(i, ALA_NO);
 		mDlgChannleShow[i] = NULL;
 		pthreads[i] = NULL;
-		setAlarm(i, false);
 	}
 }
 
@@ -423,9 +422,9 @@ void CLeakpressDlg::SendResult(int id)
 	WriteResult(id);
 }
 
-void CLeakpressDlg::WriteALAResult(int id)
+void CLeakpressDlg::WriteALAResult(int id, ALA_TYPE alarmType)
 {
-	WriteResult(id, true);
+	WriteResult(id, getALAString(alarmType), true);
 }
 
 CString CLeakpressDlg::CreateFileName(int id, CString &dt)
@@ -442,7 +441,7 @@ CString CLeakpressDlg::CreateFileName(int id, CString &dt)
 	return fileName;
 }
 
-void CLeakpressDlg::WriteResult(int id, bool alarm)
+void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 {
 	CString dt;
 	CString fileName = CreateFileName(id, dt);
@@ -490,10 +489,10 @@ void CLeakpressDlg::WriteResult(int id, bool alarm)
 		setResult(id, &r);
 	}
 
-	WriteResultToFile(para.fileSaveDir, dt, r, fileName, alarm);
+	WriteResultToFile(para.fileSaveDir, dt, r, fileName, alarmStr, alarm);
 }
 
-void CLeakpressDlg::WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, bool alarm)
+void CLeakpressDlg::WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, CString alarmStr, bool alarm)
 {
 	long total_lines = 1;
 	CString lineString;
@@ -542,11 +541,11 @@ void CLeakpressDlg::WriteResultToFile(CString dir, CString dt, RESULT r, CString
 	
 	if (alarm) {
 		if ("G" == device_prefix) {
-			temp.Format("%s, %s, %s\n", errorStr, errorStr, errorStr);
+			temp.Format("%s, %s, %s\n", alarmStr, alarmStr, alarmStr);
 		} else if ("D" == device_prefix) {
-			temp.Format("%s, %s, %s, %s, %s\n", errorStr, errorStr, errorStr, errorStr, errorStr);
+			temp.Format("%s, %s, %s, %s, %s\n", alarmStr, alarmStr, alarmStr, alarmStr, alarmStr);
 		} else if ("Y" == device_prefix) {
-			temp.Format("%s, %s\n", errorStr, errorStr);
+			temp.Format("%s, %s\n", alarmStr, alarmStr);
 		}
 	} else {
 		if ("G" == device_prefix) {
@@ -800,10 +799,11 @@ void CLeakpressDlg::OnTest(int id)
 
 void CLeakpressDlg::OnAlarm(int id)
 {
+	ALA_TYPE alarmType;
 	bool bFirstAlarm = false;
-	while (!needExit() && getAlarm(id)) {
+	while (!needExit() && (alarmType = getAlarmType(id))) {
 		if (!bFirstAlarm) {
-			WriteALAResult(id);
+			WriteALAResult(id, alarmType);
 		}
 		bFirstAlarm = true;
 	}
@@ -838,9 +838,9 @@ UINT WINAPI ThreadALAListener(LPVOID pParam)
 
 	while (!pMain->needExit()) {
 		for (int id = 0; !pMain->needExit() && id < NUM; id++) {
-			bool alarm = pMain->IsALAState(id);
-			if (pMain->getAlarm(id) != alarm) {
-				pMain->setAlarm(id, alarm);
+			PLC_ALA_TYPE alarmType = pMain->getAlarmType(id);
+			if (pMain->getAlarmType(id) != alarmType) {
+				pMain->setAlarmType(id, alarmType);
 			}
 			Sleep(1000);
 		}
@@ -849,19 +849,40 @@ UINT WINAPI ThreadALAListener(LPVOID pParam)
 	return 0;
 }
 
-bool CLeakpressDlg::getAlarm(int id)
+ALA_TYPE CLeakpressDlg::getAlarmType(int id)
 {
+	pthread_mutex_lock(&plc_mutex);
+	WORD urData = 0xff;
+	fins->ReadDM((uint16_t)addr[id].address[ALA], urData);
+	pthread_mutex_unlock(&plc_mutex);
+
 	pthread_mutex_lock(&ala_mutex);
-	bool ala = deviceAlarm[id];
+	deviceAlarm[id] = (ALA_TYPE)urData;
+	ALA_TYPE alarmType = deviceAlarm[id];
 	pthread_mutex_unlock(&ala_mutex);
 
-	return ala;
+	return alarmType;
 }
-void CLeakpressDlg::setAlarm(int id, bool alarm)
+void CLeakpressDlg::setAlarmType(int id, ALA_TYPE alarmType)
 {
 	pthread_mutex_lock(&ala_mutex);
-	deviceAlarm[id] = alarm;
+	deviceAlarm[id] = alarmType;
 	pthread_mutex_unlock(&ala_mutex);
+}
+
+CString CLeakpressDlg::getALAString(ALA_TYPE alarmType)
+{
+	CString alarmStr;
+	if (alarmType == ALA_NO) {
+	} else if (alarmType == ALA_PLC_TYPE1) {
+		alarmStr = "G1";
+	} else if (alarmType == ALA_PLC_TYPE2) {
+		alarmStr = "G2";
+	} else {
+		alarmStr = "Error";
+	}
+
+	return alarmStr;
 }
 
 bool CLeakpressDlg::needExit()
