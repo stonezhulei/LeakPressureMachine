@@ -12,7 +12,7 @@
 //#include <windows.h>
 #include <atlstr.h>
 
-class CIniFile
+class DLL_API CIniFile
 {
 public:
     CIniFile(LPCTSTR lpIniFileName, INT iMaxStringLength);

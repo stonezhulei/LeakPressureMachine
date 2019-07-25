@@ -74,7 +74,10 @@ CLeakpressDlg::~CLeakpressDlg()
 		}
 	}
 	
-	WaitForSingleObject(pThreadListener->m_hThread, INFINITE);
+	if (pThreadListener) {
+		WaitForSingleObject(pThreadListener->m_hThread, INFINITE);
+	}
+
 	delete fins;
 }
 
@@ -93,6 +96,8 @@ END_MESSAGE_MAP()
 
 
 // CLeakpressDlg 消息处理程序
+
+
 
 BOOL CLeakpressDlg::OnInitDialog()
 {

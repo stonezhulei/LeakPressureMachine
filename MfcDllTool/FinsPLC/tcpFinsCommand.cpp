@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include <pthread.h>
+#include "pthread.h"
 #include <iterator>
 
 #include "tcpFinsCommand.h"

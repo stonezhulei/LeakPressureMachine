@@ -9,7 +9,7 @@ BOOL FileManager::CheckFolderExist(CString FolderPath)
 {   
 	DWORD attr;    
 	attr = GetFileAttributes(FolderPath);    
-	return (attr != (DWORD)(-1) ) && ( attr & FILE_ATTRIBUTE_DIRECTORY);    
+	return (attr != (DWORD)(-1) ) && (attr & FILE_ATTRIBUTE_DIRECTORY);    
 }
 
 //检查文件是否存在
@@ -85,7 +85,7 @@ std::vector<MyFileNameStruct> FileManager::GetAllFileList(CString   strParent) /
 	std::vector<MyFileNameStruct> mFileNameList;
 	CString strText_i,str;  
 	CFileFind finder;    
-	bool bFind=finder.FindFile(strParent   +   "*.*"); 
+	BOOL bFind=finder.FindFile(strParent   +   "*.*"); 
 	while (bFind) 
 	{      
 		bFind=finder.FindNextFile();  
@@ -182,6 +182,24 @@ void FileManager::WriteDoubleToIni(CString strFilePath, CString strSection, CStr
 void FileManager::WriteStringToIni(CString m_szFileName, CString strSection, CString strSectionKey, CString cfg)
 {
 	WritePrivateProfileString(strSection,strSectionKey,cfg,m_szFileName);
+}
+
+BOOL FileManager::IsSectionExits(CString mPath, CString section)
+{
+	vector<CString> sections = ReadSectionNames(mPath);
+
+	for (int i = 0; i < sections.size(); i++) {
+		if (sections[i] == section) {
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+BOOL FileManager::DeleteSection(CString mPath, CString section)
+{
+	return WritePrivateProfileSection(section, NULL, mPath);  
 }
 
 vector<CString> FileManager::ReadSectionNames(CString mPath)

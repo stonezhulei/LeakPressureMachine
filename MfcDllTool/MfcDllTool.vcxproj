@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -11,26 +11,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B5562214-41AD-43F8-AF99-E362FFDD5F02}</ProjectGuid>
-    <RootNamespace>Leakpress</RootNamespace>
-    <Keyword>MFCProj</Keyword>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectGuid>{84D0B60E-4997-49F7-9169-81EDF52E2591}</ProjectGuid>
+    <RootNamespace>MfcDllTool</RootNamespace>
+    <Keyword>MFCDLLProj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -53,19 +50,19 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>DllTool;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_USRDLL;DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>pthreads-w32/include;FinsPLC;Util;COMM;Log;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>MfcDllTool.lib;pthreadVC2.lib;pthreadVCE2.lib;pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>DllTool/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
+      <ModuleDefinitionFile>.\MfcDllTool.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>pthreads-w32/lib/x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthreadVC2.lib;pthreadVCE2.lib;pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImportLibrary>$(SolutionDir)$(SolutionName)\DllTool\lib\$(TargetName).lib</ImportLibrary>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
-      <ValidateAllParameters>true</ValidateAllParameters>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </Midl>
     <ResourceCompile>
@@ -81,20 +78,21 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>DllTool;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_USRDLL;DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>pthreads-w32/include;FinsPLC;Util;COMM;Log;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>DllTool/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>MfcDllTool.lib;pthreadVC2.lib;pthreadVCE2.lib;pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>.\MfcDllTool.def</ModuleDefinitionFile>
+      <AdditionalDependencies>pthreadVC2.lib;pthreadVCE2.lib;pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>pthreads-w32/lib/x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>$(SolutionDir)$(SolutionName)\DllTool\lib\$(TargetName).lib</ImportLibrary>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
-      <ValidateAllParameters>true</ValidateAllParameters>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </Midl>
     <ResourceCompile>
@@ -104,47 +102,54 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="MfcDllTool.def" />
     <None Include="ReadMe.txt" />
-    <None Include="res\Leakpress.ico" />
-    <None Include="res\Leakpress.rc2" />
+    <None Include="res\MfcDllTool.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Ateq.h" />
-    <ClInclude Include="dataStruct.h" />
-    <ClInclude Include="DlgChannleShow.h" />
-    <ClInclude Include="DllTool\dllExport.h" />
-    <ClInclude Include="DllTool\FileManager.h" />
-    <ClInclude Include="DllTool\fins.h" />
-    <ClInclude Include="DllTool\FmCom_NoActive.h" />
-    <ClInclude Include="DllTool\IniFile.h" />
-    <ClInclude Include="DllTool\LogFile.h" />
-    <ClInclude Include="DllTool\pthread.h" />
-    <ClInclude Include="DllTool\Util.h" />
-    <ClInclude Include="Leakpress.h" />
-    <ClInclude Include="LeakpressDlg.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Ateq.cpp" />
-    <ClCompile Include="DlgChannleShow.cpp" />
-    <ClCompile Include="Leakpress.cpp" />
-    <ClCompile Include="LeakpressDlg.cpp" />
+    <ClCompile Include="FinsPLC\fins.cpp" />
+    <ClCompile Include="FinsPLC\tcpFinsCommand.cpp" />
+    <ClCompile Include="FinsPLC\tcpTransport.cpp" />
+    <ClCompile Include="FinsPLC\udpFinsCommand.cpp" />
+    <ClCompile Include="FinsPLC\udpTransport.cpp" />
+    <ClCompile Include="Log\LogFile.cpp" />
+    <ClCompile Include="MfcDllTool.cpp" />
+    <ClCompile Include="RegReader.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Util\FileManager.cpp" />
+    <ClCompile Include="Util\IniFile.cpp" />
+    <ClCompile Include="Util\Util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Leakpress.rc" />
+    <ClInclude Include="COMM\FmCom_NoActive.h" />
+    <ClInclude Include="dllExport.h" />
+    <ClInclude Include="FinsPLC\fins.h" />
+    <ClInclude Include="FinsPLC\IFinsCommand.h" />
+    <ClInclude Include="FinsPLC\ITransport.h" />
+    <ClInclude Include="FinsPLC\tcpFinsCommand.h" />
+    <ClInclude Include="FinsPLC\tcpTransport.h" />
+    <ClInclude Include="FinsPLC\udpFinsCommand.h" />
+    <ClInclude Include="FinsPLC\udpTransport.h" />
+    <ClInclude Include="Log\LogFile.h" />
+    <ClInclude Include="MfcDllTool.h" />
+    <ClInclude Include="pthreads-w32\include\pthread.h" />
+    <ClInclude Include="pthreads-w32\include\sched.h" />
+    <ClInclude Include="pthreads-w32\include\semaphore.h" />
+    <ClInclude Include="RegReader.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Util\FileManager.h" />
+    <ClInclude Include="Util\IniFile.h" />
+    <ClInclude Include="Util\Util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MfcDllTool.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-  <ProjectExtensions>
-    <VisualStudio>
-      <UserProperties RESOURCE_FILE="Leakpress.rc" />
-    </VisualStudio>
-  </ProjectExtensions>
 </Project>

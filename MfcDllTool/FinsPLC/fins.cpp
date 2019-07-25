@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "fins.h"
+#include "IFinsCommand.h"
 #include "tcpFinsCommand.h"
 #include "udpFinsCommand.h"
 #include <stdexcept>

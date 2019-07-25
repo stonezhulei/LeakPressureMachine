@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>      // std::string
 #include <sstream>     // std::stringstream
+#include "RegReader.h"
 
 using namespace std;
 
@@ -252,6 +253,31 @@ std::string strToHex(std::string str, std::string separator)
 		ss << hex[(unsigned char)str[i] >> 4] << hex[(unsigned char)str[i] & 0xf] << separator;
 	
 	return ss.str();
+}
+
+bool DllInit()
+{
+	string guid = RegReader::GetRegValue(2, "SOFTWARE\\Microsoft\\Cryptography", "MachineGuid");
+	return true;
+}
+
+//判断管理员权限
+bool IsAdmin()
+{
+	BOOL b;
+	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+	PSID AdministratorsGroup;
+	b = AllocateAndInitializeSid(&NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &AdministratorsGroup);
+	if (b)
+	{
+		if (!CheckTokenMembership(NULL, AdministratorsGroup, &b))
+		{
+			b = FALSE;
+		}
+		FreeSid(AdministratorsGroup);
+	}
+
+	return(b);
 }
 
 }
