@@ -48,6 +48,7 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 		setAlarmType(i, ALA_NO);
 		mDlgChannleShow[i] = NULL;
      	pthreads[i] = NULL;
+
 	}
 }
 
@@ -76,6 +77,7 @@ CLeakpressDlg::~CLeakpressDlg()
 	}
 	
 	WaitForSingleObject(pThreadListener->m_hThread, INFINITE);
+
 	delete fins;
 }
 
@@ -94,6 +96,8 @@ END_MESSAGE_MAP()
 
 
 // CLeakpressDlg 消息处理程序
+
+
 
 BOOL CLeakpressDlg::OnInitDialog()
 {
@@ -391,6 +395,7 @@ bool CLeakpressDlg::IsEndState(int id)
 	return urData == PLC_End;
 }
 
+
 bool CLeakpressDlg::IsALAState(int id)
 {
 	pthread_mutex_lock(&plc_mutex);
@@ -422,7 +427,6 @@ void CLeakpressDlg::SendResult(int id)
 	WriteResult(id);
 }
 
-
 void CLeakpressDlg::WriteALAResult(int id, ALA_TYPE alarmType)
 {
 	WriteResult(id, getALAString(alarmType), true);
@@ -446,7 +450,6 @@ void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 {
 	CString dt;
 	CString fileName = CreateFileName(id, dt);
-
 	RESULT r = getResult(id);
 	if (!alarm) {
 		CString device_prefix = this->getDevicePrefix(id);
@@ -494,6 +497,7 @@ void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 	else {
 		printf("%s: errorCode = %s\n", getDevicePrefix2(id), alarmStr);
 	}
+
 	WriteResultToFile(para.fileSaveDir, dt, r, fileName, alarmStr, alarm);
 }
 
@@ -777,14 +781,12 @@ void CLeakpressDlg::OnTest(int id)
 
 	// 7.等待 PLC 获取结果
 	printf("%s：等待 PLC 读取结果\n", device_name);
-
 	while (!IsGetResult(id)) {
 		CHECK_THREAD_RESET(id)
 		Sleep(200);
 	}
 
 	// 8.查询压机结果
-
 	printf("%s：query press result\n", device_name);
 	if ("Y" == device_prefix) {
 		QueryPressResult(id);
@@ -796,7 +798,6 @@ void CLeakpressDlg::OnTest(int id)
 	}  
 
 	printf("%s：send result\n", device_name);
-
 	SendResult(id); // 给 PLC 发送结果
 
 	printf("%s：waiting end\n", device_name);

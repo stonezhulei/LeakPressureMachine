@@ -84,7 +84,6 @@ public:
 	CString getALAString(ALA_TYPE alarmType); // »ñÈ¡±¨¾¯×Ö·û´®
 
 	void ResetClearAlarm(int id);
-
 	bool needExit();
 
 private:
@@ -115,5 +114,4 @@ private:
 	void OnTest(int id);
 
 	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, CString alarmStr, bool alarm);
-	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, bool alarm = false);
 };

@@ -116,7 +116,6 @@ typedef enum CTRL_STATE {
 	PC_StartLowTest = 5,
 	PC_ResultSended = 10,
 	PC_ClearALA = 0,
-
 } CTRL_STATE;
 
 // Í¨ÓÃ¼Ä´æÆ÷
