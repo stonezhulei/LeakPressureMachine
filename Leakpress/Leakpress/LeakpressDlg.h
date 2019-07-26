@@ -105,10 +105,13 @@ private:
 	CWinThread *pthreads[NUM];
 	CWinThread *pThreadListener;
 
+	CString errorStr;
+
 private:
 	void MoveCtrl();
 	void InitTabShow();
 	void OnAlarm(int id);
 	void OnTest(int id);
+
 	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, CString alarmStr, bool alarm);
 };

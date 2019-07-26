@@ -31,6 +31,7 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CLeakpressDlg::IDD, pParent)
 	, fins(new Fins(TransportType::Udp))
 	, isWindowLoaded(false)
+	, errorStr("error")
 	, exit(false)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
@@ -46,7 +47,8 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 		mThreadParas.push_back(make_pair(i, this));
 		setAlarmType(i, ALA_NO);
 		mDlgChannleShow[i] = NULL;
-		pthreads[i] = NULL;
+     	pthreads[i] = NULL;
+
 	}
 }
 
@@ -74,9 +76,7 @@ CLeakpressDlg::~CLeakpressDlg()
 		}
 	}
 	
-	if (pThreadListener) {
-		WaitForSingleObject(pThreadListener->m_hThread, INFINITE);
-	}
+	WaitForSingleObject(pThreadListener->m_hThread, INFINITE);
 
 	delete fins;
 }
@@ -392,9 +392,9 @@ bool CLeakpressDlg::IsEndState(int id)
 	WORD urData = 0xff;
 	fins->ReadDM((uint16_t)addr[id].address[MES], urData);
 	pthread_mutex_unlock(&plc_mutex);
-
 	return urData == PLC_End;
 }
+
 
 bool CLeakpressDlg::IsALAState(int id)
 {
@@ -402,9 +402,9 @@ bool CLeakpressDlg::IsALAState(int id)
 	WORD urData = 0xff;
 	fins->ReadDM((uint16_t)addr[id].address[ALA], urData);
 	pthread_mutex_unlock(&plc_mutex);
-
-	return urData == PLC_ALA;
+    return urData == PLC_ALA;
 }
+
 
 RESULT CLeakpressDlg::getResult(int id)
 {
@@ -450,7 +450,6 @@ void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 {
 	CString dt;
 	CString fileName = CreateFileName(id, dt);
-
 	RESULT r = getResult(id);
 	if (!alarm) {
 		CString device_prefix = this->getDevicePrefix(id);
@@ -493,7 +492,6 @@ void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
 		else {
 			return;
 		}
-
 		setResult(id, &r);
 	}
 	else {
@@ -714,7 +712,6 @@ void CLeakpressDlg::OnTest(int id)
 		Sleep(500);
 	} while (!bstart);
 
-
 	printf("%s£∫====start====\n", device_name);
 	ResetAteqState(id);
 
@@ -779,7 +776,6 @@ void CLeakpressDlg::OnTest(int id)
 			Sleep(100);
 			SendTestPress(id);
 		}
-
 		printf("%s£∫====3 ∂ŒŒ»—πΩ· ¯====\n", device_name);
 	}
 

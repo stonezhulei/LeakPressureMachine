@@ -191,4 +191,3 @@ typedef enum PLC_ALA_TYPE {
 
 } ALA_TYPE;
 
-

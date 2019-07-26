@@ -106,7 +106,6 @@ bool Fins::WriteDM(uint16_t address, uint8_t data[], uint16_t count, bool reserv
 		byteData[i] = byteData[i + 1];
 		byteData[i + 1] = byte;
 	}
-
 	bool bWirte = MemoryAreaWrite(DM, address, 0, count / 2 + count % 2, byteData);
 	delete []byteData;
 
