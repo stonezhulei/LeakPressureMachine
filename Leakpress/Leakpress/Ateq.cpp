@@ -108,8 +108,8 @@ void Ateq::parsePress(const unsigned char* hexarray, int length)
 
 	if (check) {
 		state = PRESS_RESULT;
-		position = (data[21] << 24) + (data[22] << 16) + (data[23] << 8)  + data[24];
 		press = (data[25] << 24) + (data[26] << 16)  + (data[27] << 8) + data[28];
+		position = (data[21] << 24) + (data[22] << 16) + (data[23] << 8)  + data[24];
 		printf(">>>> press = %ld, position = %ld\n", press, position);
 	}
 
@@ -136,7 +136,6 @@ void Ateq::parseHigh(const unsigned char* hexarray)
 	ATEQ_EVENT *e = new ATEQ_EVENT(id, ATEQ_RESULT_1, leakFrame.wLeakPress, leakFrame.wLeakValue);
 	::PostMessage(mMainWnd->GetSafeHwnd(), WM_USER_EVENT_MSG, 0, (LPARAM)e);
 }
-
 
 void Ateq::parseLow(const unsigned char* hexarray, int length)
 {

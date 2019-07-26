@@ -13,23 +13,8 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="COMM">
-      <UniqueIdentifier>{d7ae742e-06e0-4c2c-93e4-287e528ebb3e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="FinsPLC">
-      <UniqueIdentifier>{ff11e17c-cf66-4987-8779-ffb31ea3c48e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="FinsPLC\tcp">
-      <UniqueIdentifier>{b1113bc3-afce-4f07-9850-a960bc288112}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="FinsPLC\udp">
-      <UniqueIdentifier>{80d2e410-7d22-4854-9f58-3678c64c5484}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Util">
-      <UniqueIdentifier>{d4dc79f0-4837-44a9-b178-58184d26b39b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Log">
-      <UniqueIdentifier>{60559f69-8f0b-43a1-8b9c-91ed36a3ce2a}</UniqueIdentifier>
+    <Filter Include="DllTool">
+      <UniqueIdentifier>{4453ed54-d184-40d6-bf64-d860d3a6686f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -57,50 +42,38 @@
     <ClInclude Include="LeakpressDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\COMM\FmCom_NoActive.h">
-      <Filter>COMM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FinsPLC\fins.h">
-      <Filter>FinsPLC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FinsPLC\IFinsCommand.h">
-      <Filter>FinsPLC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FinsPLC\ITransport.h">
-      <Filter>FinsPLC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FinsPLC\udpFinsCommand.h">
-      <Filter>FinsPLC\udp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FinsPLC\udpTransport.h">
-      <Filter>FinsPLC\udp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FinsPLC\tcpFinsCommand.h">
-      <Filter>FinsPLC\tcp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FinsPLC\tcpTransport.h">
-      <Filter>FinsPLC\tcp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Util\FileManager.h">
-      <Filter>Util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Util\Util.h">
-      <Filter>Util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Log\LogFile.h">
-      <Filter>Log</Filter>
-    </ClInclude>
     <ClInclude Include="Ateq.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="dataStruct.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\Util\IniFile.h">
-      <Filter>Util</Filter>
-    </ClInclude>
     <ClInclude Include="DlgChannleShow.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\FileManager.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\fins.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\IniFile.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\LogFile.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\Util.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\dllExport.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\FmCom_NoActive.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\pthread.h">
+      <Filter>DllTool</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -113,35 +86,8 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\FinsPLC\fins.cpp">
-      <Filter>FinsPLC</Filter>
-    </ClCompile>
-    <ClCompile Include="..\FinsPLC\udpFinsCommand.cpp">
-      <Filter>FinsPLC\udp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\FinsPLC\udpTransport.cpp">
-      <Filter>FinsPLC\udp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\FinsPLC\tcpFinsCommand.cpp">
-      <Filter>FinsPLC\tcp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\FinsPLC\tcpTransport.cpp">
-      <Filter>FinsPLC\tcp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Util\FileManager.cpp">
-      <Filter>Util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Util\Util.cpp">
-      <Filter>Util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Log\LogFile.cpp">
-      <Filter>Log</Filter>
-    </ClCompile>
     <ClCompile Include="Ateq.cpp">
       <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Util\IniFile.cpp">
-      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="DlgChannleShow.cpp">
       <Filter>源文件</Filter>
