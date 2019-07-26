@@ -13,18 +13,26 @@
 #define new DEBUG_NEW
 #endif
 
+#define CHECK_THREAD_RESET(id) \
+	if (getAlarmType(id) || needExit()) { \
+		return; \
+	} 
+
 static pthread_mutex_t r_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static pthread_mutex_t ala_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_mutex_t plc_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_mutex_t ateq_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 UINT  WINAPI ThreadInit(LPVOID pParam);
-UINT (WINAPI *pThread[NUM]) (LPVOID pParam) = {Thread1, Thread2, Thread3, Thread4, Thread5};
+UINT  WINAPI ThreadALAListener(LPVOID pParam);
 // CLeakpressDlg 对话框
 
 CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CLeakpressDlg::IDD, pParent)
 	, fins(new Fins(TransportType::Udp))
-	, isWindowsLoaded(false)
+	, isWindowLoaded(false)
+	, errorStr("error")
+	, exit(false)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
@@ -34,6 +42,13 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 	freopen("CONOUT$", "w", stdout);
 	freopen("CONOUT$", "w", stderr);
 #endif
+
+	for (int i=0;i<NUM;i++) {
+		mThreadParas.push_back(make_pair(i, this));
+		setAlarmType(i, ALA_NO);
+		mDlgChannleShow[i] = NULL;
+     	pthreads[i] = NULL;
+	}
 }
 
 CLeakpressDlg::~CLeakpressDlg()
@@ -45,15 +60,22 @@ CLeakpressDlg::~CLeakpressDlg()
 	FreeConsole();
 #endif
 
+	exit = true;
+	fins->Close();
+
 	for (int i=0;i<NUM;i++)
 	{
 		if (mDlgChannleShow[i])
 		{
 			delete mDlgChannleShow[i];
 			mDlgChannleShow[i] = NULL;
+			if (pthreads[i]) {
+				WaitForSingleObject(pthreads[i]->m_hThread, INFINITE);
+			}
 		}
 	}
-
+	
+	WaitForSingleObject(pThreadListener->m_hThread, INFINITE);
 	delete fins;
 }
 
@@ -66,6 +88,7 @@ BEGIN_MESSAGE_MAP(CLeakpressDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_SIZE()
+	ON_WM_GETMINMAXINFO()
 	ON_MESSAGE(WM_USER_EVENT_MSG, &CLeakpressDlg::OnAteqEventMsg)
 END_MESSAGE_MAP()
 
@@ -81,11 +104,10 @@ BOOL CLeakpressDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
 	LoadConfig();
 	InitTabShow();
 
-	isWindowsLoaded = true;
+	isWindowLoaded = true;
 	MoveCtrl();
 
 	Init();
@@ -133,9 +155,22 @@ void CLeakpressDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 
-	// TODO: 在此处添加消息处理程序代码
 	MoveCtrl();
 }
+
+void CLeakpressDlg::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
+{
+	// 限制窗口最小尺寸
+	lpMMI->ptMinTrackSize.x = 780;
+	lpMMI->ptMinTrackSize.y = 530;
+
+	// 限制窗口最大尺寸
+	lpMMI->ptMaxTrackSize.x = GetSystemMetrics(SM_CXSCREEN);
+	lpMMI->ptMaxTrackSize.y = GetSystemMetrics(SM_CYSCREEN);
+
+	CDialogEx::OnGetMinMaxInfo(lpMMI);
+}
+
 
 void CLeakpressDlg::LoadConfig()
 {
@@ -145,63 +180,59 @@ void CLeakpressDlg::LoadConfig()
 
 	memset(addr, 0, sizeof(addr));
 
+	// 读取站名
+	vector<CString> sections = FileManager::ReadSectionNames(addrIni);
+	for (int k = 0; k < sections.size(); k++) {
+		para.deviceName[k] = sections[k];
+	}
+
+	// 读取 PLC 寄存器配置
 	for (int i = 0; i < NUM; i++) {
-		vector<CString> childs = FileManager::ReadChildsOnGroup(addrIni, "ATEQ" + Util::toString(i + 1));
+		vector<CString> childs = FileManager::ReadChildsOnGroup(addrIni, sections[i]);
 
 		for (int k = 0; k < childs.size() && k < PLCADDSIZE; k++) {
 			CString mKeyValueStr = childs[k];
 			CString mkeyStr = mKeyValueStr.Left(mKeyValueStr.Find("="));
 			CString mValueStr = mKeyValueStr.Mid(mKeyValueStr.Find("=") + 1);
-			addr[i].address[k] = (BYTE)atoi(mValueStr);
+			addr[i].address[k] = (UINT)atoi(mValueStr);
 		}
 	}
 
-	vector<CString> childs = FileManager::ReadChildsOnGroup(configIni, "PARA");
+	// 获取软件配置
+	vector<CString> childs = FileManager::ReadChildsOnGroup(configIni, "COMMON");
 	for (int k = 0; k < childs.size(); k++) {
 		CString mKeyValueStr = childs[k];
 		CString mkeyStr = mKeyValueStr.Left(mKeyValueStr.Find("="));
 		CString mValueStr = mKeyValueStr.Mid(mKeyValueStr.Find("=") + 1);
-		if (mkeyStr == "IP")
+		if (mkeyStr == "IP") 
 		{
 			para.ip = mValueStr;
-		}
+		} 
 		else if (strstr(mkeyStr, "COM"))
 		{
 			int port = (atoi)(mkeyStr.Right(1)) - 1;
 			para.coms[port] = mValueStr;
 		}
-		else if (strstr(mkeyStr, "PROG"))
+		else if (strstr(mkeyStr, "FILE_SAVE_DIR")) 
 		{
-			int id = (atoi)(mkeyStr.Right(1)) - 1;
-			para.progs[id] = (atoi)(mValueStr);
-		}
-		else if (strstr(mkeyStr, "FILE_PREFIX"))
-		{
-			RESULT r;
-			int id = (atoi)(mkeyStr.Right(1)) - 1;
-			para.prefix[id] = mValueStr;
-		}
-		else if (strstr(mkeyStr, "DIR"))
-		{
-			para.dir = mValueStr;
+			para.fileSaveDir = mValueStr;
 		}
 	}
 }
 
 void CLeakpressDlg::InitTabShow()
 {
-	for (int i=0;i<NUM;i++)
-	{
+	for (int i=0;i<NUM;i++) {
 		mDlgChannleShow[i]=new DlgChannleShow(this);
 		mDlgChannleShow[i]->Create(IDD_DlgChannleShow, this);
 		mDlgChannleShow[i]->ShowWindow(SW_SHOW);
-		mDlgChannleShow[i]->SetChannle(i+1,"ATEQ - "+Util::toString(i+1));
+		mDlgChannleShow[i]->SetChannle(i+1, para.deviceName[i]);
 	}
 }
 
 void CLeakpressDlg::MoveCtrl()
 {
-	if (!isWindowsLoaded){
+	if (!isWindowLoaded){
 		return;
 	}
 
@@ -213,55 +244,59 @@ void CLeakpressDlg::MoveCtrl()
 	int nLeft=2;
 	int nWidth=nWindowWidth-nLeft;
 	CRect mRect;
-	if (mDlgChannleShow[0]->GetSafeHwnd())
-	{
+	if (mDlgChannleShow[2]->GetSafeHwnd()) {
 		CRect rcMove;
 		rcMove.left =nLeft;
 		rcMove.top = 0;
 		rcMove.right =rcMove.left+nWidth/3;
 		rcMove.bottom =rcMove.top+ nWindowHeight/2;
-		mDlgChannleShow[0]->MoveWindow(rcMove,TRUE);
+		mDlgChannleShow[2]->MoveWindow(rcMove,TRUE);
 		mRect=rcMove;
 	}
 
-	if (mDlgChannleShow[1]->GetSafeHwnd())
-	{
+	if (mDlgChannleShow[3]->GetSafeHwnd()) {
 		CRect rcMove;
 		rcMove.left =mRect.right;
 		rcMove.top = 0;
-		rcMove.right =rcMove.left+nWidth/3;
-		rcMove.bottom =rcMove.top+ nWindowHeight/2;
-		mDlgChannleShow[1]->MoveWindow(rcMove,TRUE);
-	}
-
-	if (mDlgChannleShow[2]->GetSafeHwnd())
-	{
-		CRect rcMove;
-		rcMove.left =mRect.right + nWidth/3;
-		rcMove.top = 0;
-		rcMove.right =rcMove.left+nWidth/3;
-		rcMove.bottom = rcMove.top+nWindowHeight/2;
-		mDlgChannleShow[2]->MoveWindow(rcMove,TRUE);
-	}
-
-	if (mDlgChannleShow[3]->GetSafeHwnd())
-	{
-		CRect rcMove;
-		rcMove.left =mRect.left;
-		rcMove.top = mRect.bottom;
 		rcMove.right =rcMove.left+nWidth/3;
 		rcMove.bottom =rcMove.top+ nWindowHeight/2;
 		mDlgChannleShow[3]->MoveWindow(rcMove,TRUE);
 	}
 
-	if (mDlgChannleShow[4]->GetSafeHwnd())
-	{
+	if (mDlgChannleShow[4]->GetSafeHwnd()) {
+		CRect rcMove;
+		rcMove.left =mRect.right + nWidth/3;
+		rcMove.top = 0;
+		rcMove.right =rcMove.left+nWidth/3;
+		rcMove.bottom = rcMove.top+nWindowHeight/2;
+		mDlgChannleShow[4]->MoveWindow(rcMove,TRUE);
+	}
+
+	if (mDlgChannleShow[0]->GetSafeHwnd()) {
+		CRect rcMove;
+		rcMove.left =mRect.left;
+		rcMove.top = mRect.bottom;
+		rcMove.right =rcMove.left+nWidth/3;
+		rcMove.bottom =rcMove.top+ nWindowHeight/2;
+		mDlgChannleShow[0]->MoveWindow(rcMove,TRUE);
+	}
+
+	if (mDlgChannleShow[1]->GetSafeHwnd()) {
 		CRect rcMove;
 		rcMove.left =mRect.right;
 		rcMove.top = mRect.bottom;
 		rcMove.right =rcMove.left+nWidth/3;
 		rcMove.bottom = rcMove.top+nWindowHeight/2;
-		mDlgChannleShow[4]->MoveWindow(rcMove,TRUE);
+		mDlgChannleShow[1]->MoveWindow(rcMove,TRUE);
+	}
+
+	if (mDlgChannleShow[5]->GetSafeHwnd()) {
+		CRect rcMove;
+		rcMove.left =mRect.right + nWidth/3;
+		rcMove.top = mRect.bottom;
+		rcMove.right =rcMove.left+nWidth/3;
+		rcMove.bottom = rcMove.top+nWindowHeight/2;
+		mDlgChannleShow[5]->MoveWindow(rcMove,TRUE);
 	}
 }
 
@@ -272,33 +307,13 @@ void CLeakpressDlg::Init()
 
 bool CLeakpressDlg::PLCConnect()
 {
-	WORD wVersionRequested;
-	WSADATA wsaData;
-	int err;
-	wVersionRequested = MAKEWORD(2, 2);
-	err = WSAStartup(wVersionRequested, &wsaData);
-	if (err != 0) {
-		printf("WSAStartup failed with error: %d\n", err);
-		return false;
-	}
-
-	if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
-		printf("Could not find a usable version of Winsock.dll\n");
-		WSACleanup();
-		return false;
-	}
-	else
-		printf("The Winsock 2.2 dll was found okay\n");
-
-
 	fins->SetRemote(para.ip.GetBuffer(0));
-	if (!fins->Connect())
-	{
-		WSACleanup();
+	if (!fins->Connect()) {
 		MessageBox("PLC连接错误", "PLC连接", MB_OK);
 		return false;
 	}
 
+	pThreadListener = AfxBeginThread((AFX_THREADPROC)ThreadALAListener, this, THREAD_PRIORITY_IDLE);
 	return true;
 }
 
@@ -323,16 +338,17 @@ bool CLeakpressDlg::AteqConnect()
 
 		if (ateqs[i].isConnect()) {
 			ateqFlag[i] = ATEQ_REST;
-			AfxBeginThread((AFX_THREADPROC)pThread[i], this, THREAD_PRIORITY_IDLE);
+			mDlgChannleShow[i]->setConnectState(true);
+			pthreads[i] = AfxBeginThread((AFX_THREADPROC)ThreadTestProcess, &mThreadParas[i], THREAD_PRIORITY_IDLE);
 		} else {
-			info += "ATEQ" + commPara[0] + " ";
+			info += para.deviceName[i] + "  ";
 		}
 	}
 
 	if (info.GetLength() > 0) 
 	{
 		info += "连接失败";
-		MessageBox(info, "ATEQ连接", MB_OK);
+		MessageBox(info, "设备连接", MB_OK);
 		return false;
 	}
 
@@ -342,7 +358,7 @@ bool CLeakpressDlg::AteqConnect()
 void CLeakpressDlg::StartTest(int id)
 {
 	pthread_mutex_lock(&plc_mutex);
-	fins->WriteDM((uint16_t)addr[id].address[1], (uint16_t)5);
+	fins->WriteDM((uint16_t)addr[id].address[CTRL], (uint16_t)(PC_StartLowTest));
 	pthread_mutex_unlock(&plc_mutex);
 }
 
@@ -350,31 +366,40 @@ bool CLeakpressDlg::IsStartState(int id)
 {
 	pthread_mutex_lock(&plc_mutex);
 	WORD urData = 0xff;
-	fins->ReadDM((uint16_t)addr[id].address[0], urData);
+	fins->ReadDM((uint16_t)addr[id].address[MES], urData);
 	pthread_mutex_unlock(&plc_mutex);
 
-	return urData == 0;
+	return urData == PLC_Start;
 }
 
 bool CLeakpressDlg::IsGetResult(int id)
 {
 	pthread_mutex_lock(&plc_mutex);
 	WORD urData = 0xff;
-	fins->ReadDM((uint16_t)addr[id].address[0], urData);
+	fins->ReadDM((uint16_t)addr[id].address[MES], urData);
 	pthread_mutex_unlock(&plc_mutex);
 
-	return urData == 9;
+	return urData == PLC_RequestResult;
 }
 
 bool CLeakpressDlg::IsEndState(int id)
 {
 	pthread_mutex_lock(&plc_mutex);
 	WORD urData = 0xff;
-	fins->ReadDM((uint16_t)addr[id].address[0], urData);
+	fins->ReadDM((uint16_t)addr[id].address[MES], urData);
 	pthread_mutex_unlock(&plc_mutex);
-
-	return urData == 8;
+	return urData == PLC_End;
 }
+
+bool CLeakpressDlg::IsALAState(int id)
+{
+	pthread_mutex_lock(&plc_mutex);
+	WORD urData = 0xff;
+	fins->ReadDM((uint16_t)addr[id].address[ALA], urData);
+	pthread_mutex_unlock(&plc_mutex);
+    return urData == PLC_ALA;
+}
+
 
 RESULT CLeakpressDlg::getResult(int id)
 {
@@ -394,110 +419,173 @@ void CLeakpressDlg::setResult(int id, RESULT *r)
 
 void CLeakpressDlg::SendResult(int id)
 {
+	WriteResult(id);
+}
+
+
+void CLeakpressDlg::WriteALAResult(int id, ALA_TYPE alarmType)
+{
+	WriteResult(id, getALAString(alarmType), true);
+}
+
+CString CLeakpressDlg::CreateFileName(int id, CString &dt)
+{
 	RESULT r = getResult(id);
 
 	CTime curTime = CTime::GetCurrentTime();
-	CString csCurTime = curTime.Format("%Y-%m-%d %H:%M:%S");
+	dt = curTime.Format("%Y-%m-%d %H:%M:%S");
 	CString dateString = curTime.Format("%m%d");
-	CString fileName = para.prefix[id] + dateString;
-	memcpy(r.fileName, fileName, 6);
-
-	//// 等待数据获取成功
-	//while (!r.ready) {
-	//	Sleep(100);
-	//	r = getResult(id);
-	//}
-
-	//r.ready = FALSE;
-
-	if (id == 0 || id == 1) {
-		pthread_mutex_lock(&plc_mutex);
-		fins->WriteDM((uint16_t)addr[id].address[0], (uint16_t)(10));
-		fins->WriteDM((uint16_t)addr[id].address[1], (uint16_t)(r.wLeakPress));
-		fins->WriteDM((uint16_t)addr[id].address[2], (uint16_t)(r.wLeakValue));
-		fins->WriteDM((uint16_t)addr[id].address[3], r.fileName, 6);
-		
-		// 读取 Workpress
-		WORD urData = 0;
-		fins->ReadDM((uint16_t)addr[id].address[4], urData); r.wWorkPress = urData * 1000;
-		pthread_mutex_unlock(&plc_mutex);
-
-		setResult(id, &r);
-		WriteResultToFile(para.dir, fileName, csCurTime, r, false);
-	}
-	else {
-		pthread_mutex_lock(&plc_mutex);
-		fins->WriteDM((uint16_t)addr[id].address[0], (uint16_t)(10));
-		fins->WriteDM((uint16_t)addr[id].address[2], (uint16_t)(r.wLeakPress / 10));
-		fins->WriteDM((uint16_t)addr[id].address[3], (uint16_t)(r.wLeakValue / 100));
-		fins->WriteDM((uint16_t)addr[id].address[6], r.fileName, 6);
-
-		// 读取 P1 P2
-		WORD urData = 0xff;
-		fins->ReadDM((uint16_t)addr[id].address[7], urData); r.wTestPress1 = urData * 10;
-		fins->ReadDM((uint16_t)addr[id].address[8], urData); r.wTestPress2 = urData * 10;
-		pthread_mutex_unlock(&plc_mutex);
-
-		setResult(id, &r);
-		WriteResultToFile(para.dir, fileName, csCurTime, r, true);
-	}
-
+	CString fileName = para.deviceName[id].Left(2) + dateString;
+	memcpy(r.fileName, fileName, FILE_NAME_LENGTH);
+	
+	setResult(id, &r);
+	return fileName;
 }
 
-void CLeakpressDlg::WriteResultToFile(CString dir, CString fileName, CString dt, RESULT r, bool isLow)
+void CLeakpressDlg::WriteResult(int id, CString alarmStr, bool alarm)
+{
+	CString dt;
+	CString fileName = CreateFileName(id, dt);
+
+	RESULT r = getResult(id);
+	if (!alarm) {
+		CString device_prefix = this->getDevicePrefix(id);
+		if ("G" == device_prefix) {
+			pthread_mutex_lock(&plc_mutex);
+			fins->WriteDM((uint16_t)addr[id].address[MESHighLeakPCcontrol], (uint16_t)(10));
+			fins->WriteDM((uint16_t)addr[id].address[HighLeakPCPress], (uint16_t)(r.dwLeakPress));
+			fins->WriteDM((uint16_t)addr[id].address[HighLeakPCLeakValue], (uint16_t)(r.dwLeakValue));
+			fins->WriteDM((uint16_t)addr[id].address[HighLeakPCFileName], r.fileName, FILE_NAME_LENGTH);
+
+			// 读取 Workpress
+			WORD urData = 0xff;
+			fins->ReadDM((uint16_t)addr[id].address[HighLeakPCInPress], urData); r.dwWorkPress = urData * 1000;
+			pthread_mutex_unlock(&plc_mutex);
+		}
+		else if ("D" == device_prefix) {
+			pthread_mutex_lock(&plc_mutex);
+			fins->WriteDM((uint16_t)addr[id].address[MESLowLeakPCcontrol], (uint16_t)(PC_ResultSended));
+			fins->WriteDM((uint16_t)addr[id].address[LowLeakPCPress], (uint16_t)(r.dwLeakPress / 10));
+			fins->WriteDM((uint16_t)addr[id].address[LowLeakPCLeakValue], (uint16_t)(r.dwLeakValue / 100));
+			fins->WriteDM((uint16_t)addr[id].address[LowLeakPCFileName], r.fileName, FILE_NAME_LENGTH);
+
+
+			// 读取 P1 P2
+			WORD urData = 0xff;
+			fins->ReadDM((uint16_t)addr[id].address[LowLeakPCValueTest1], urData); r.dwTestPress1 = urData * 10;
+			fins->ReadDM((uint16_t)addr[id].address[LowLeakPCValueTest2], urData); r.dwTestPress2 = urData * 10;
+			pthread_mutex_unlock(&plc_mutex);
+		}
+		else if ("Y" == device_prefix) {
+			pthread_mutex_lock(&plc_mutex);
+
+			uint16_t data = (r.dwPosition % 10 >= 5) ? (r.dwPosition / 10 + 1) : r.dwPosition / 10; // 四舍五入
+			fins->WriteDM((uint16_t)addr[id].address[MESPressPCcontrol], (uint16_t)(PC_ResultSended));
+			fins->WriteDM((uint16_t)addr[id].address[PressPCPressData], (uint16_t)(r.dwPress));
+			fins->WriteDM((uint16_t)addr[id].address[PressPCPressPosition], (uint16_t)(data));
+			fins->WriteDM((uint16_t)addr[id].address[PressPCFileName], r.fileName, FILE_NAME_LENGTH);
+			pthread_mutex_unlock(&plc_mutex);
+		}
+		else {
+			return;
+		}
+		setResult(id, &r);
+	}
+	else {
+		printf("%s: errorCode = %s\n", getDevicePrefix2(id), alarmStr);
+	}
+	WriteResultToFile(para.fileSaveDir, dt, r, fileName, alarmStr, alarm);
+}
+
+void CLeakpressDlg::WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, CString alarmStr, bool alarm)
 {
 	long total_lines = 1;
 	CString lineString;
 
-	if (isLow) {
-		dir += "\\LowLeakpress";
-	}
-	else {
+	CString device_prefix = fileName.Left(1);
+
+	// 生成目录
+	if ("G" == device_prefix) {
 		dir += "\\HighLeakpress";
-	}
-
-	if (0 != access(dir, 0))   //if the floder not exits,create a new one
-	{
-		mkdir(dir);   // 返回 0 表示创建成功，-1 表示失败  
-	}
-
-	CString path = dir + "\\" + fileName + ".csv";
-	if (!FileManager::CheckFileExist(path)) {
-		lineString.Append("NO, DATETIME, TYPE, PRESS, LEAK");
-		if (isLow) {
-			lineString.Append(", P1, P2, P1 - P2\n");
-		}
-		else {
-			lineString.Append(", Workpress\n");
-		}
+	} else if ("D" == device_prefix) {
+		dir += "\\LowLeakpress";
+	} else if ("Y" == device_prefix) {
+		dir += "\\Press";
 	} else {
-		total_lines = FileManager::FileTotalLines(path);
+		return;
 	}
 
+	// 目录不存在，创建
+	if (!FileManager::CheckFolderExist(dir)) {
+		FileManager::CreateMuliteDirectory(dir);
+	}
+
+	// 文件头，行号
+	CString path = dir + "\\" + fileName + ".csv";
+	CString bkPath = dir + "\\" + fileName + ".txt";
+	if (FileManager::CheckFileExist(path)) {
+		total_lines = FileManager::CheckFileExist(bkPath) ?
+			FileManager::FileTotalLines(bkPath) : FileManager::FileTotalLines(path);
+
+	} else {
+		if ("G" == device_prefix) {
+			lineString.Append("NO, DATETIME, PRESS, LEAK, Workpress\n");
+		} else if ("D" == device_prefix) {
+			lineString.Append("NO, DATETIME, PRESS, LEAK, P1, P2, P1-P2\n");
+		} else if ("Y" == device_prefix) {
+			lineString.Append("NO, DATETIME, PRESS, Position\n");
+		}
+	}
+
+	// 文件内容
 	CString temp;	
 	temp.Format("%d, ", total_lines);
 	lineString.Append(temp);
 	lineString.Append(dt);
 	lineString.Append(", ");
-	lineString.Append(fileName);
-	if (isLow) {
-		temp.Format(", %ld, %ld, %ld, %ld, %ld\n", r.wLeakPress, r.wLeakValue, r.wTestPress1, r.wTestPress2, r.wTestPress1 - r.wTestPress2);
-	}
-	else {
-		temp.Format(", %ld, %ld, %ld\n", r.wLeakPress, r.wLeakValue, r.wWorkPress);
+	
+	if (alarm) {
+		if ("G" == device_prefix) {
+			temp.Format("%s, %s, %s\n", alarmStr, alarmStr, alarmStr);
+		} else if ("D" == device_prefix) {
+			temp.Format("%s, %s, %s, %s, %s\n", alarmStr, alarmStr, alarmStr, alarmStr, alarmStr);
+		} else if ("Y" == device_prefix) {
+			temp.Format("%s, %s\n", alarmStr, alarmStr);
+		}
+	} else {
+		if ("G" == device_prefix) {
+			temp.Format("%ld, %ld, %ld\n", r.dwLeakPress, r.dwLeakValue, r.dwWorkPress);
+		} else if ("D" == device_prefix) {
+			temp.Format("%ld, %ld, %ld, %ld, %ld\n", r.dwLeakPress, r.dwLeakValue, r.dwTestPress1, r.dwTestPress2, r.dwTestPress1 - r.dwTestPress2);
+		} else if ("Y" == device_prefix) {
+			temp.Format("%ld, %ld\n", r.dwPress, r.dwPosition);
+		}
 	}
 	
 	lineString.Append(temp);
-
-	FileManager::SaveFile(lineString, path);
+	FileManager::SaveFile(lineString, path, bkPath);
 }
+
+
+CString CLeakpressDlg::getDevicePrefix(int id)
+{
+	CString device_prefix = para.deviceName[id].Left(1);
+	return device_prefix;
+}
+
+CString CLeakpressDlg::getDevicePrefix2(int id)
+{
+	CString device_prefix = para.deviceName[id].Left(2);
+	return device_prefix;
+}
+
 
 void CLeakpressDlg::SendTestPress1(int id)
 {
 	RESULT r = getResult(id);
 
 	pthread_mutex_lock(&plc_mutex);
-	fins->WriteDM((uint16_t)addr[id].address[4], (uint16_t)(r.wTestPress1 / 10));
+	fins->WriteDM((uint16_t)addr[id].address[Test1], (uint16_t)(r.dwTestPress1 / 10));
 	pthread_mutex_unlock(&plc_mutex);
 }
 
@@ -506,7 +594,7 @@ void CLeakpressDlg::SendTestPress2(int id)
 	RESULT r = getResult(id);
 
 	pthread_mutex_lock(&plc_mutex);
-	fins->WriteDM((uint16_t)addr[id].address[5], (uint16_t)(r.wTestPress2 / 10));
+	fins->WriteDM((uint16_t)addr[id].address[Test2], (uint16_t)(r.dwTestPress2 / 10));
 	pthread_mutex_unlock(&plc_mutex);
 }
 
@@ -515,9 +603,19 @@ void CLeakpressDlg::SendTestPress(int id)
 	RESULT r = getResult(id);
 
 	pthread_mutex_lock(&plc_mutex);
-	fins->WriteDM((uint16_t)addr[id].address[1], (uint16_t)(5));
-	fins->WriteDM((uint16_t)addr[id].address[4], (uint16_t)(r.wTestPress1 / 10));
+	fins->WriteDM((uint16_t)addr[id].address[CTRL], (uint16_t)(PC_StartLowTest));
+	fins->WriteDM((uint16_t)addr[id].address[Test1], (uint16_t)(r.dwTestPress1 / 10));
 	pthread_mutex_unlock(&plc_mutex);
+}
+
+bool CLeakpressDlg::QueryPressResult(int id)
+{
+	BYTE cmd[66] = {0};
+	cmd[0] = 0xAA;
+	cmd[1] = 0x20;
+	cmd[2] = 0x01;
+	cmd[65] = 0xCB;
+	return ateqs[id].Write(cmd, 66) == 66;
 }
 
 bool CLeakpressDlg::QueryAteqTest(int id)
@@ -575,34 +673,17 @@ afx_msg LRESULT CLeakpressDlg::OnAteqEventMsg(WPARAM wParam, LPARAM lParam)
 
 	switch (e->state)
 	{
-	case ATEQ_REPLY:
-		break;
-	case ATEQ_TEST_1:
-		//r.wLeakPress = e->press;
-		//r.wLeakValue = e->leak;
-		break;
-	case ATEQ_STABLE_1:
-		break;
 	case ATEQ_RESULT_1:
-		r.wLeakPress = e->press;
-		r.wLeakValue = e->leak;
-		r.ready = TRUE;
-		break;
-	case ATEQ_ERROR_1:
-		break;
-
-	case ATEQ_TEST_2:
+		r.dwLeakPress = e->value1;
+		r.dwLeakValue = e->value2;
 		break;
 	case ATEQ_STABLE_2:
-		r.wTestPress1 = e->press;
-		r.wTestPress2 = e->press; // 测试1、2发同一个通道
+		r.dwTestPress1 = e->value1;
+		r.dwTestPress2 = e->value1; // 测试1、2发同一个通道
 		break;
-	case ATEQ_RESULT_2:
-		//r.wLeakPress = e->press;
-		//r.wLeakValue = e->leak;	
-		break;
-	case ATEQ_ERROR_2:
-		break;
+	case PRESS_RESULT:
+		r.dwPress = e->value1;
+		r.dwPosition = e->value2;
 	default:
 		break;
 	}
@@ -613,51 +694,27 @@ afx_msg LRESULT CLeakpressDlg::OnAteqEventMsg(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void CLeakpressDlg::OnHighTest(int id, bool bstart, bool isAteqLow )
+void CLeakpressDlg::OnTest(int id)
 {
+	bool bstart = false;
+	CString device_prefix = getDevicePrefix(id);
+	CString device_name = getDevicePrefix2(id);
+
 	// 1.查询 PLC 复位信号
-	if (!bstart) {
+	do 
+	{
+		CHECK_THREAD_RESET(id)
 		bstart = IsStartState(id);
 		Sleep(500);
-		if (!bstart) {
-			return;
-		}
-	}
+	} while (!bstart);
 
-	printf("====start %d====\n", id + 1);
+	printf("%s：====start====\n", device_name);
 	ResetAteqState(id);
 
-	// 2.等待 PLC 获取结果
-	puts("wait plc get result");
-	while (!IsGetResult(id)) {
-		Sleep(200);
-	}
-
-	puts("send result");
-	SendResult(id); // 给 PLC 发送结果
-
-	puts("waiting end");
-
-
-}
-
-void CLeakpressDlg::OnTest(int id, bool bstart, bool isAteqLow)
-{
-	// 1.查询 PLC 复位信号
-	if (!bstart) {
-		bstart = IsStartState(id);
-		Sleep(500);
-		if (!bstart) {
-			return;
-		}
-	}
-
-	printf("====start %d====\n", id + 1);
-	ResetAteqState(id);
-
-	if (isAteqLow) {
+	if ("D" == device_prefix) {
 		// 2.等待 2 段稳压
 		do {
+			CHECK_THREAD_RESET(id)
 			QueryAteqTest(id);
 			Sleep(100);
 		} while (IsAteqStateMatch(id, ATEQ_REST));
@@ -665,186 +722,223 @@ void CLeakpressDlg::OnTest(int id, bool bstart, bool isAteqLow)
 		// 3.等待 2 段稳压结束
 		bool error = true;
 		while (IsAteqStateMatch(id, ATEQ_STABLE_1)) {
+			CHECK_THREAD_RESET(id)
 			QueryAteqTest(id);
 			error = false;
 			Sleep(100);
 		}
 
 		if (error) {
-			puts("2 段漏气");
+			printf("%s：2 段漏气\n", device_name);
 			return;
 		}
 		else {
-			puts("====2 段稳压结束====");
+			printf("%s：====2 段稳压结束====\n", device_name);
 			//Sleep(1000);
 		}
 
 		while (!IsAteqStateMatch(id, ATEQ_TEST_1, false)) {
+			CHECK_THREAD_RESET(id)
 			QueryAteqTest(id);
 			Sleep(100);
 		}
 
-		puts("====查询2 段结果====");
+		printf("%s：====查询2 段结果====\n", device_name);
 
 		// 4.查询 2 段结果
 		do {
+			CHECK_THREAD_RESET(id)
 			QueryAteqResult(id);
 			Sleep(100);
 		} while (!IsAteqStateMatch(id, ATEQ_RESULT_1, false));
 
-		puts("等待 3 段稳压");
+		printf("%s：等待 3 段稳压\n", device_name);
 
 		// 5. 等待 3 段稳压
 		do {
+			CHECK_THREAD_RESET(id)
 			QueryAteqTest(id);
 			Sleep(100);
 		} while (!IsAteqStateMatch(id, ATEQ_STABLE_2, false));
 
 		if (QueryAteqState(id) == ATEQ_STABLE_2) {
-			puts("sending test press");
+			printf("%s：sending test press\n", device_name);
 		}
 
 		// 6. 3 段稳压，一直发送结果
 		while (IsAteqStateMatch(id, ATEQ_STABLE_2, false)) {
+			CHECK_THREAD_RESET(id)
 			QueryAteqTest(id);
 			Sleep(100);
 			SendTestPress(id);
 		}
-
-		puts("====3 段稳压结束，等待 PLC 读取 2 段结果====");
-	}
-	else {
-		puts("====等待 PLC 读取 2 段结果====");
+		printf("%s：====3 段稳压结束====\n", device_name);
 	}
 
 	// 7.等待 PLC 获取结果
-	puts("wait plc get result");
+	printf("%s：等待 PLC 读取结果\n", device_name);
+
 	while (!IsGetResult(id)) {
+		CHECK_THREAD_RESET(id)
 		Sleep(200);
 	}
 
-	puts("send result");
+	// 8.查询压机结果
+
+	printf("%s：query press result\n", device_name);
+	if ("Y" == device_prefix) {
+		QueryPressResult(id);
+		while (!IsAteqStateMatch(id, PRESS_RESULT, false)) {
+			CHECK_THREAD_RESET(id)
+			//QueryPressResult(id);
+			Sleep(100);
+		}
+	}  
+
+	printf("%s：send result\n", device_name);
+
 	SendResult(id); // 给 PLC 发送结果
 
-	puts("waiting end");
+	printf("%s：waiting end\n", device_name);
 
 	// 8.等待 PLC 结束
 	while (!IsEndState(id)) {
+		CHECK_THREAD_RESET(id)
 		Sleep(100);
 	}
 
 	bstart = false;
 
-	puts("====end====");
+	printf("%s：====end====\n", device_name);
 }
 
-// 用于软件启动,连接硬件
+void CLeakpressDlg::OnAlarm(int id)
+{
+	ALA_TYPE alarmType;
+	bool bFirstAlarm = false;
+	while (!needExit() && (alarmType = getAlarmType(id))) {
+		if (!bFirstAlarm) {
+			WriteALAResult(id, alarmType);
+			ResetClearAlarm(id);
+		}
+		bFirstAlarm = true;
+	}
+}
+
+
+// 用于软件启动, 连接硬件（耗时操作）
 UINT WINAPI ThreadInit(LPVOID pParam)
 {
 	CLeakpressDlg *pMain=(CLeakpressDlg*)pParam;
+	pMain->Init();
 
-	if (NULL != pMain)
-	{
-		pMain->Init();
+	return 0;
+}
+
+UINT WINAPI ThreadTestProcess(LPVOID pParam)
+{	
+	pair<int, void *> *p = (pair<int, void *> *)pParam;
+	CLeakpressDlg *pMain = (CLeakpressDlg *)p->second;
+
+	while (!pMain->needExit()) {
+		pMain->OnTest(p->first);
+		pMain->OnAlarm(p->first);
 	}
 
 	return 0;
 }
 
-UINT WINAPI Thread1(LPVOID pParam)
+UINT WINAPI ThreadALAListener(LPVOID pParam)
 {
-	int id = 0;
+	CLeakpressDlg *pMain=(CLeakpressDlg*)pParam;
 
-	CLeakpressDlg *pMain = (CLeakpressDlg*)pParam;
-	DlgChannleShow *pDlg = pMain->mDlgChannleShow[id];
-
-	pDlg->m_flagThreadStart = true;
-
-	bool bstart = false;
-	while (!pDlg->m_flagThreadExit)
-	{
-		pMain->OnTest(id, bstart, false);
+	while (!pMain->needExit()) {
+		for (int id = 0; !pMain->needExit() && id < NUM; id++) {
+			PLC_ALA_TYPE alarmType = pMain->getAlarmType(id);
+			if (pMain->getAlarmType(id) != alarmType) {
+				pMain->setAlarmType(id, alarmType);
+			}
+			Sleep(1000);
+		}
 	}
 
-	pDlg->m_flagThreadStart = false;
 	return 0;
 }
 
-
-UINT WINAPI Thread2(LPVOID pParam)
+ALA_TYPE CLeakpressDlg::getAlarmType(int id)
 {
-	int id = 1;
+	pthread_mutex_lock(&plc_mutex);
+	WORD urData = 0xff;
+	fins->ReadDM((uint16_t)addr[id].address[ALA], urData);
+	pthread_mutex_unlock(&plc_mutex);
 
-	CLeakpressDlg *pMain = (CLeakpressDlg*)pParam;
-	DlgChannleShow *pDlg = pMain->mDlgChannleShow[id];
+	pthread_mutex_lock(&ala_mutex);
+	deviceAlarm[id] = (ALA_TYPE)urData;
+	ALA_TYPE alarmType = deviceAlarm[id];
+	pthread_mutex_unlock(&ala_mutex);
 
-	pDlg->m_flagThreadStart = true;
-
-	bool bstart = false;
-	while (!pDlg->m_flagThreadExit)
-	{
-		pMain->OnTest(id, bstart, false);
-	}
-
-	pDlg->m_flagThreadStart = false;
-	return 0;
+	return alarmType;
 }
-
-
-UINT WINAPI Thread3(LPVOID pParam)
+void CLeakpressDlg::setAlarmType(int id, ALA_TYPE alarmType)
 {
-	int id = 2;
-
-	CLeakpressDlg *pMain = (CLeakpressDlg*)pParam;
-	DlgChannleShow *pDlg = pMain->mDlgChannleShow[id];
-
-	pDlg->m_flagThreadStart = true;
-
-	bool bstart = false;
-	while (!pDlg->m_flagThreadExit)
-	{
-		pMain->OnTest(id, bstart);
-	}
-
-	pDlg->m_flagThreadStart = false;
-	return 0;
+	pthread_mutex_lock(&ala_mutex);
+	deviceAlarm[id] = alarmType;
+	pthread_mutex_unlock(&ala_mutex);
 }
 
-UINT WINAPI Thread4(LPVOID pParam)
+void CLeakpressDlg::ResetClearAlarm(int id)
 {
-	int id = 3;
-
-	CLeakpressDlg *pMain = (CLeakpressDlg*)pParam;
-	DlgChannleShow *pDlg = pMain->mDlgChannleShow[id];
-
-	pDlg->m_flagThreadStart = true;
-
-	bool bstart = false;
-	while (!pDlg->m_flagThreadExit)
-	{
-		pMain->OnTest(id, bstart);
-	}
-
-	pDlg->m_flagThreadStart = false;
-	return 0;
+	pthread_mutex_lock(&plc_mutex);
+	fins->WriteDM((uint16_t)addr[id].address[ALA], (uint16_t)(PC_ClearALA));
+	pthread_mutex_unlock(&plc_mutex);
 }
 
-UINT WINAPI Thread5(LPVOID pParam)
+
+CString CLeakpressDlg::getALAString(ALA_TYPE alarmType)
 {
-	int id = 4;
-
-	CLeakpressDlg *pMain = (CLeakpressDlg*)pParam;
-	DlgChannleShow *pDlg = pMain->mDlgChannleShow[id];
-
-	pDlg->m_flagThreadStart = true;
-
-	bool bstart = false;
-	while (!pDlg->m_flagThreadExit)
-	{
-		pMain->OnTest(id, bstart);
+	CString alarmStr;
+	if (alarmType == ALA_NO) {
+	} else if (alarmType == ALA_P1_TYPE1) {
+		alarmStr = "Error";
+	} else if (alarmType == ALA_P1_TYPE2) {
+		alarmStr = "0";
+	} else if(alarmType == ALA_P1_TYPE3){
+		alarmStr = "";      
+	}else if (alarmType == ALA_G1_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_G1_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_G1_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_G2_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_G2_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_G2_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_L1_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_L1_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_L1_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_L2_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_L2_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_L2_TYPE3) {
+		alarmStr = "50000";
+	}else if (alarmType == ALA_L3_TYPE1) {
+		alarmStr = "Error";
+	}else if (alarmType == ALA_L3_TYPE2) {
+		alarmStr = "CYLError";
+	}else if (alarmType == ALA_L3_TYPE3) {
+		alarmStr = "50000";
 	}
-
-	pDlg->m_flagThreadStart = false;
-	return 0;
+	return alarmStr;
 }
 
+bool CLeakpressDlg::needExit()
+{
+	return exit;
+}

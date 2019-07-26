@@ -24,8 +24,8 @@ Fins::Fins(TransportType TType) : _finsCmd(NULL)
 
 Fins::~Fins()
 {
-	//Close();
 	delete _finsCmd;
+	_finsCmd = NULL;
 }
 
 bool Fins::Connect()
@@ -43,25 +43,6 @@ void OmronPlc::Fins::SetRemote(string ipaddr, uint16_t port)
 	_finsCmd->SetRemote(ipaddr, port);
 }
 
-void OmronPlc::Fins::SetPlcAddress(WORD address[])
-{
-	UINT wSize2 = sizeof(plcAddress) / sizeof(plcAddress[0]);
-
-	for (uint16_t i = 0; i < wSize2; i++)
-	{
-		plcAddress[i] = address[i];
-	}
-}
-WORD  OmronPlc::Fins::GetPlcAddress(UINT index)
-{
-	UINT wSize2 = sizeof(plcAddress)/  sizeof(plcAddress[0]);
-	if (index < wSize2)
-	{
-		return plcAddress[index];
-	}
-	return 0;
-}
-
 bool Fins::MemoryAreaRead(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count)
 {
 	return _finsCmd->MemoryAreaRead(area, address, bit_position, count);
@@ -76,7 +57,7 @@ bool Fins::ReadDM(uint16_t address, uint16_t & value)
 {
 	if (!MemoryAreaRead(DM, address, 0, 1)) return false;
 
-	value = (uint16_t)(((unsigned int )_finsCmd->Response[0] << 8) + (unsigned int)_finsCmd->Response[1]);
+	value = (uint16_t)(((unsigned int)_finsCmd->Response[0] << 8) + (unsigned int)_finsCmd->Response[1]);
 
 	return true;
 }
@@ -85,7 +66,7 @@ bool Fins::ReadDM(uint16_t address, int16_t & value)
 {
 	if (!MemoryAreaRead(DM, address, 0, 1)) return false;
 
-	value = (int16_t)(((int)_finsCmd->Response[0] << 8) + (int)_finsCmd->Response[1]);
+	value = (int16_t)(((int)_finsCmd->Response[0] << 8) + (int16_t)_finsCmd->Response[1]);
 
 	return true;
 }
@@ -96,7 +77,7 @@ bool Fins::ReadDM(uint16_t address, uint16_t data[], uint16_t count)
 
 	for (int x = 0; x < count; ++x)
 	{
-		data[x] = (uint16_t)(((unsigned int)_finsCmd->Response[x * 2] << 8) + ((unsigned int)_finsCmd->Response[x * 2 + 1]));
+		data[x] = (uint16_t)(((unsigned int)_finsCmd->Response[x * 2] << 8) + ((uint16_t)_finsCmd->Response[x * 2 + 1]));
 	}
 
 	return true;
@@ -111,43 +92,21 @@ bool Fins::WriteDM(uint16_t address, const uint16_t value)
 	return MemoryAreaWrite(DM, address, 0, 1, data);
 }
 
-bool Fins::WriteDM(uint16_t address, const int16_t value)
-{
-	uint8_t data[2];
-	data[0] = (uint8_t)((value >> 8) & 0xFF);
-	data[1] = (uint8_t)(value & 0xFF);
-
-	return MemoryAreaWrite(DM, address, 0, 1, data);
-}
-
-bool Fins::WriteDM(uint16_t address, uint16_t data[], uint16_t count)
-{
-	int i = count * sizeof(uint16_t);
-	uint8_t *byteData= new uint8_t(i);
-
-	for (int x = 0; x < count; ++x)
-	{
-		byteData[x * 2] = (uint8_t)(data[x] / 256);
-		byteData[x * 2 + 1] = (uint8_t)(data[x] % 256);
-	}
-	bool bWirte = MemoryAreaWrite(DM, address, 0, count, byteData);
-	delete byteData;
-	
-	return bWirte;
-}
-
 //uint8_t data[] = "D31231";
 //uint8_t data[] = "3D2113"; // ·´¹ýÀ´
 //fins->WriteDM((uint16_t)170, data, 6);
 bool Fins::WriteDM(uint16_t address, uint8_t data[], uint16_t count, bool reserve)
 {
-	for (int i = 0; reserve && i < count - 1; i += 2) {
-		uint8_t byte = data[i];
-		data[i] = data[i + 1];
-		data[i + 1] = byte;
-	}
+	uint8_t *byteData = new uint8_t[count];
+	memcpy(byteData, data, count);
 
-	bool bWirte = MemoryAreaWrite(DM, address, 0, count, data);
+	for (int i = 0; reserve && i < count - 1; i += 2) {
+		uint8_t byte = byteData[i];
+		byteData[i] = byteData[i + 1];
+		byteData[i + 1] = byte;
+	}
+	bool bWirte = MemoryAreaWrite(DM, address, 0, count / 2 + count % 2, byteData);
+	delete []byteData;
 	return bWirte;
 }
 

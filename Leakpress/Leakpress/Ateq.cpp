@@ -12,6 +12,8 @@
 
 Ateq::Ateq(void)
 {
+	recvlength = 0;
+	memset(data, 0, 66);
 }
 
 Ateq::~Ateq(void)
@@ -57,22 +59,68 @@ void Ateq::OnReceive()
 	unsigned long uReadLength = Read(hexarray, 100, 100);
 	if (uReadLength > 0)
 	{
-		if (id == 0 || id == 1) {
+		CString device_prefix = mMainWnd->getDevicePrefix(id);
+		if ("G" == device_prefix) {
 			parseHigh(hexarray);
+		} else if ("D" == device_prefix) {
+			parseLow(hexarray, uReadLength);
+		} else if ("Y" == device_prefix) {
+			parsePress(hexarray, uReadLength);
+		} else {
+			return;
 		}
-		else {
-			parse(hexarray, uReadLength);
+
+#ifdef _DEBUG
+		if ("Y" == device_prefix) {
+			if (recvlength >= PRESS_DATA_LENGTH) {
+				recvlength = 0;
+				writeAteqLog(data, PRESS_DATA_LENGTH);
+			}
+		} else {
+			writeAteqLog(hexarray, uReadLength);
 		}
-		
-		writeAteqLog(hexarray, uReadLength);
+#endif
 	}
+}
+
+void Ateq::parsePress(const unsigned char* hexarray, int length)
+{
+	memcpy(&data[recvlength], hexarray, length);
+	recvlength += length;
+	//printf("%d\n", recvlength);
+
+	if (recvlength < PRESS_DATA_LENGTH) {
+		return;
+	}
+
+	STATE state = ATEQ_REPLY;
+
+	UINT press = 0;
+	UINT position = 0;
+
+	// 计算校验和
+	BYTE sum = 0; 
+	for (int i = 0; i < PRESS_DATA_LENGTH  - 1; i++) {
+		sum += data[i];
+	}
+
+	bool check = (sum == data[PRESS_DATA_LENGTH - 1]);
+
+	if (check) {
+		state = PRESS_RESULT;
+		position = (data[21] << 24) + (data[22] << 16) + (data[23] << 8)  + data[24];
+		press = (data[25] << 24) + (data[26] << 16)  + (data[27] << 8) + data[28];
+		printf(">>>> press = %ld, position = %ld\n", press, position);
+	}
+
+	ATEQ_EVENT *e = new ATEQ_EVENT(id, state, press, position);
+	::PostMessage(mMainWnd->GetSafeHwnd(), WM_USER_EVENT_MSG, 0, (LPARAM)e);
 }
 
 void Ateq::parseHigh(const unsigned char* hexarray)
 {
-	vector<CString> splitVec = Util::SpiltString((char *)hexarray, 0x09);
+	vector<CString> splitVec = Util::SpiltString((char *)hexarray, 0x09); // Tab
 	
-
 	LEAK_PARAMETERS leakFrame;
 	memset(&leakFrame, 0, sizeof(LEAK_PARAMETERS));
 
@@ -90,7 +138,7 @@ void Ateq::parseHigh(const unsigned char* hexarray)
 }
 
 
-void Ateq::parse(const unsigned char* hexarray, int length)
+void Ateq::parseLow(const unsigned char* hexarray, int length)
 {
 	// 不是需要的数据
 	if (hexarray[0] != 0xFF || hexarray[1] != 0x03) {
@@ -135,14 +183,13 @@ void Ateq::parse(const unsigned char* hexarray, int length)
 			leakFrame.wLeakValue = dwleak;
 
 			leakFrame.nDataType = REAL_VALUE;
-			printf("P:%d, S:%d, Step:%d, (%d, %d)\n", dwPrg, GETBIT(wState, 5), wStep, dwbar, dwleak);
+			//printf("P:%d, S:%d, Step:%d, (%d, %d)\n", dwPrg, GETBIT(wState, 5), wStep, dwbar, dwleak);
 		}
 	}
 	else if (hexarray[2] == 0x18)//字节数
 	{
 		wStep = (wStep | hexarray[8]) << 8;//测试状态
 		wStep = wStep | hexarray[7];
-		/*	wStep = (wStep >> 5) & 1;*/
 		leakFrame.wTestState = wStep;	
 
 		dwPrg = (dwPrg | hexarray[4]) << 8;

@@ -34,8 +34,9 @@ public:
 protected:
 	void OnReceive();
 	void writeAteqLog(const unsigned char* hexarray, int length);
-	void parse(const unsigned char* hexarray, int length);
 	void parseHigh(const unsigned char* hexarray);
+	void parseLow(const unsigned char* hexarray, int length);
+	void parsePress(const unsigned char* hexarray, int length);
 	vector<string> split(const string &str,const string &pattern);
 	void handle(LEAK_PARAMETERS *leakParm);
 
@@ -45,5 +46,7 @@ private:
 	int id;
 	CLeakpressDlg *mMainWnd;
 	CLogFile logger;
+	unsigned char data[66];
+	int recvlength;
 };
 

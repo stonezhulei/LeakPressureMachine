@@ -6,9 +6,9 @@
 
 #include "Ateq.h"
 #include "fins.h"
-#include <vector>
 #include "pthread.h"
 #include "DlgChannleShow.h"
+#include <vector>
 #include <direct.h>
 
 using namespace std;
@@ -22,12 +22,7 @@ public:
 	CLeakpressDlg(CWnd* pParent = NULL);	// 标准构造函数
 	virtual ~CLeakpressDlg();
 
-	// 只允许线程使用
-	friend UINT WINAPI Thread1(LPVOID pParam);
-	friend UINT WINAPI Thread2(LPVOID pParam);
-	friend UINT WINAPI Thread3(LPVOID pParam);
-	friend UINT WINAPI Thread4(LPVOID pParam);
-	friend UINT WINAPI Thread5(LPVOID pParam);
+	friend UINT WINAPI ThreadTestProcess(LPVOID pParam);
 
 // 对话框数据
 	enum { IDD = IDD_LEAKPRESS_DIALOG };
@@ -43,7 +38,10 @@ protected:
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg LRESULT OnAteqEventMsg(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
 
 public:
@@ -56,6 +54,7 @@ public:
 	bool IsStartState(int id);
 	bool IsGetResult(int id);
 	bool IsEndState(int id);
+	bool IsALAState(int id);
 	void SendResult(int id);
 	void SendTestPress1(int id);
 	void SendTestPress2(int id);
@@ -63,6 +62,7 @@ public:
 
 	bool QueryAteqTest(int id); // 查询实时值
 	bool QueryAteqResult(int id); // 最后测试结果
+	bool QueryPressResult(int id); // 查询压机结果
 
 	bool IsAteqStateMatch(int id, ATEQ_STATE state, bool reply = true);
 	ATEQ_STATE QueryAteqState(int id);
@@ -72,7 +72,20 @@ public:
 	RESULT getResult(int id);
 	void setResult(int id, RESULT *r);
 
-	void WriteResultToFile(CString dir, CString fileName, CString dt, RESULT r, bool isLow);
+	ALA_TYPE getAlarmType(int id);
+	void setAlarmType(int id, ALA_TYPE alarmType);
+
+	void WriteALAResult(int id, ALA_TYPE alarmType);
+	void WriteResult(int id, CString alarmStr = "", bool alarm = false);
+	CString CreateFileName(int id, CString &dt);
+
+	CString getDevicePrefix(int id); // 获取外设代号
+	CString getDevicePrefix2(int id);
+	CString getALAString(ALA_TYPE alarmType); // 获取报警字符串
+
+	void ResetClearAlarm(int id);
+
+	bool needExit();
 
 private:
 	Fins *fins;
@@ -83,14 +96,24 @@ private:
 
 	ATEQ_STATE ateqFlag[NUM];
 
-	bool isWindowsLoaded;
+	ALA_TYPE deviceAlarm[NUM];
+
+	bool isWindowLoaded;
 	DlgChannleShow* mDlgChannleShow[NUM];
 
+	bool exit;
+	vector<pair<int, void *>> mThreadParas;
+	CWinThread *pthreads[NUM];
+	CWinThread *pThreadListener;
+
+	CString errorStr;
+
 private:
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg LRESULT OnAteqEventMsg(WPARAM wParam, LPARAM lParam);
-	void OnTest(int id, bool bstart, bool isAteqLow = true);
-	void OnHighTest(int id, bool bstart, bool isAteqHigh = true);
-	void InitTabShow();
 	void MoveCtrl();
+	void InitTabShow();
+	void OnAlarm(int id);
+	void OnTest(int id);
+
+	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, CString alarmStr, bool alarm);
+	void WriteResultToFile(CString dir, CString dt, RESULT r, CString fileName, bool alarm = false);
 };

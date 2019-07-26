@@ -81,7 +81,7 @@ void OmronPlc::udpTransport::Close()
 {
 	if (Connected)
 	{
-		close(_socket);
+		closesocket(_socket);
 		_socket = 0;
 		Connected = false;
 	}

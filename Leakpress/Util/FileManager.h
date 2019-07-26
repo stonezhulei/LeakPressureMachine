@@ -52,11 +52,12 @@ namespace FileManager
 	void	WriteDoubleToIni(CString strFilePath, CString strSection, CString strSectionKey, double cfg);
 	void	WriteStringToIni(CString strFilePath, CString strSection, CString strSectionKey, CString cfg);
 
-	vector<CString> ReadChildsOnGroup(CString mPath,CString mGroupName);
-
+	vector<CString> ReadSectionNames(CString mPath);
+	vector<CString> ReadChildsOnGroup(CString mPath, CString mGroupName);
 
 	//文本操作 TXT  CSV
-	BOOL SaveFile(CString str, CString strFilePath, BOOL app=TRUE); // 保存字符串
+	BOOL SaveFile(CString str, CString strFilePath, BOOL app=TRUE, BOOL hide=FALSE); // 保存字符串
+	BOOL SaveFile(CString lineString, CString path, CString bkPath, BOOL app=TRUE);
 	BOOL SaveFile(vector<CString> strVec, CString strFilePath, CString SpitChar=_T(","), BOOL app=TRUE); // 保存一行数据
 	BOOL SaveFile(vector<vector<CString>> strVecVec, CString strFilePath, CString SpitChar=_T(","), CString strSencodSign=_T("\n"), BOOL app=TRUE); // 保存行列数据
 	BOOL ReadFileByLine(vector<CString> &strVec, CString strFilePath); // 按行读取
@@ -73,6 +74,5 @@ namespace FileManager
 	void SetConfig(CString mName,int mValue,bool flagAutoSave=true);
 	void SetConfig(CString mName,float mValue,bool flagAutoSave=true);
 	void SetConfig(CString mName,double mValue,bool flagAutoSave=true);
-
 };
 
