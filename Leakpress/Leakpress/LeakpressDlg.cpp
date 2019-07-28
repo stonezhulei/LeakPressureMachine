@@ -36,12 +36,12 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	AllocConsole();
 	freopen("CONIN$", "r", stdin);
 	freopen("CONOUT$", "w", stdout);
 	freopen("CONOUT$", "w", stderr);
-#endif
+//#endif
 
 	for (int i=0;i<NUM;i++) {
 		mThreadParas.push_back(make_pair(i, this));
@@ -54,12 +54,12 @@ CLeakpressDlg::CLeakpressDlg(CWnd* pParent /*=NULL*/)
 
 CLeakpressDlg::~CLeakpressDlg()
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	fclose(stdin);
 	fclose(stdout);
 	fclose(stderr);
 	FreeConsole();
-#endif
+//#endif
 
 	exit = true;
 	fins->Close();
@@ -341,7 +341,8 @@ bool CLeakpressDlg::AteqConnect()
 		vector<CString> commPara = Util::SpiltString(para.coms[i], ' ');
 
 		if (ateqs[i].isConnect()) {
-			ateqFlag[i] = ATEQ_REST;
+			ResetAteqState(i);
+			ResetClearAlarm(i);
 			mDlgChannleShow[i]->setConnectState(true);
 			pthreads[i] = AfxBeginThread((AFX_THREADPROC)ThreadTestProcess, &mThreadParas[i], THREAD_PRIORITY_IDLE);
 		} else {

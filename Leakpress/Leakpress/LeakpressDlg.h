@@ -94,7 +94,6 @@ private:
 	pthread_t pid;
 
 	ATEQ_STATE ateqFlag[NUM];
-
 	ALA_TYPE deviceAlarm[NUM];
 
 	bool isWindowLoaded;
