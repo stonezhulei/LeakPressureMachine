@@ -8,6 +8,9 @@
 #include <process.h>
 #endif /* _UNISTD_H */
 
+#include <shlwapi.h>
+#pragma comment(lib, "Shlwapi.lib")
+
 // https://blog.csdn.net/youxiazzz12/article/details/25634143
 // https://blog.csdn.net/caowei880123/article/details/8266252
 
