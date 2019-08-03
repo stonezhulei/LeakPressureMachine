@@ -118,6 +118,7 @@
     <ClInclude Include="DllTool\FmCom_NoActive.h" />
     <ClInclude Include="DllTool\IniFile.h" />
     <ClInclude Include="DllTool\LogFile.h" />
+    <ClInclude Include="DllTool\MiniDump.h" />
     <ClInclude Include="DllTool\pthread.h" />
     <ClInclude Include="DllTool\Util.h" />
     <ClInclude Include="Leakpress.h" />

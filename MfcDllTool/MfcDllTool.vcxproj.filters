@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="pthreads-w32">
+      <UniqueIdentifier>{f123bad3-6ead-40ce-88d7-9baf2379132d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FinsPLC">
+      <UniqueIdentifier>{b13ee9ef-cd44-4fd4-b344-805bcdccd517}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{e4c96ee6-3433-478c-a098-72968528297f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Log">
+      <UniqueIdentifier>{020bc520-753d-4c90-80c6-835dd5825576}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="COMM">
+      <UniqueIdentifier>{0fe7d488-70d0-49e5-b33a-289673dba68b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dump">
+      <UniqueIdentifier>{7736949c-5c7a-4bd8-b27e-5679ec3dc1c1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+    <None Include="MfcDllTool.def">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="res\MfcDllTool.rc2">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MfcDllTool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\LogFile.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="FinsPLC\fins.cpp">
+      <Filter>FinsPLC</Filter>
+    </ClCompile>
+    <ClCompile Include="FinsPLC\tcpFinsCommand.cpp">
+      <Filter>FinsPLC</Filter>
+    </ClCompile>
+    <ClCompile Include="FinsPLC\tcpTransport.cpp">
+      <Filter>FinsPLC</Filter>
+    </ClCompile>
+    <ClCompile Include="FinsPLC\udpFinsCommand.cpp">
+      <Filter>FinsPLC</Filter>
+    </ClCompile>
+    <ClCompile Include="FinsPLC\udpTransport.cpp">
+      <Filter>FinsPLC</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\FileManager.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\IniFile.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Util.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="RegReader.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Dump\MiniDump.cpp">
+      <Filter>Dump</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MfcDllTool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\LogFile.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="FinsPLC\fins.h">
+      <Filter>FinsPLC</Filter>
+    </ClInclude>
+    <ClInclude Include="FinsPLC\IFinsCommand.h">
+      <Filter>FinsPLC</Filter>
+    </ClInclude>
+    <ClInclude Include="FinsPLC\ITransport.h">
+      <Filter>FinsPLC</Filter>
+    </ClInclude>
+    <ClInclude Include="FinsPLC\tcpFinsCommand.h">
+      <Filter>FinsPLC</Filter>
+    </ClInclude>
+    <ClInclude Include="FinsPLC\tcpTransport.h">
+      <Filter>FinsPLC</Filter>
+    </ClInclude>
+    <ClInclude Include="FinsPLC\udpFinsCommand.h">
+      <Filter>FinsPLC</Filter>
+    </ClInclude>
+    <ClInclude Include="FinsPLC\udpTransport.h">
+      <Filter>FinsPLC</Filter>
+    </ClInclude>
+    <ClInclude Include="COMM\FmCom_NoActive.h">
+      <Filter>COMM</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\FileManager.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\IniFile.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Util.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="pthreads-w32\include\pthread.h">
+      <Filter>pthreads-w32</Filter>
+    </ClInclude>
+    <ClInclude Include="pthreads-w32\include\sched.h">
+      <Filter>pthreads-w32</Filter>
+    </ClInclude>
+    <ClInclude Include="pthreads-w32\include\semaphore.h">
+      <Filter>pthreads-w32</Filter>
+    </ClInclude>
+    <ClInclude Include="dllExport.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RegReader.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Dump\MiniDump.h">
+      <Filter>Dump</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MfcDllTool.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

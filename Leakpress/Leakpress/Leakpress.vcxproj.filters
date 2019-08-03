@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="DllTool">
+      <UniqueIdentifier>{4453ed54-d184-40d6-bf64-d860d3a6686f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+    <None Include="res\Leakpress.rc2">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\Leakpress.ico">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Leakpress.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LeakpressDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Ateq.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="dataStruct.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgChannleShow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\FileManager.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\fins.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\IniFile.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\LogFile.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\Util.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\dllExport.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\FmCom_NoActive.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\pthread.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+    <ClInclude Include="DllTool\MiniDump.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Leakpress.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LeakpressDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Ateq.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgChannleShow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Leakpress.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
