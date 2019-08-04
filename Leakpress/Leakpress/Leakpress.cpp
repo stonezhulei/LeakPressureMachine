@@ -6,6 +6,7 @@
 #include "Leakpress.h"
 #include "LeakpressDlg.h"
 #include "MiniDump.h"
+#include "Util.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -52,6 +53,9 @@ BOOL CLeakpressApp::InitInstance()
 
     CWinApp::InitInstance();
 
+    if (!Util::IsSingleton("Leakpress")) {
+        return FALSE;
+    }
 
     AfxEnableControlContainer();
 

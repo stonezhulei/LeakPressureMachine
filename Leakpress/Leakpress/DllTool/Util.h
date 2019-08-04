@@ -24,5 +24,10 @@ namespace Util
 
     DLL_API std::string chToHex(unsigned char ch);
     DLL_API std::string strToHex(std::string str, std::string separator = "");
+
+    DLL_API BOOL IsAdmin();
+    DLL_API BOOL IsSingleton(string title);
+
+    bool DllInit();
 };
 

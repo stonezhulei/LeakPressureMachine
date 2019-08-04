@@ -318,7 +318,7 @@ bool CLeakpressDlg::PLCConnect()
 {
     fins->SetRemote(para.ip.GetBuffer(0));
     if (!fins->Connect()) {
-        MessageBox("PLC连接错误", "PLC连接", MB_OK);
+        MessageBox("PLC连接错误", "PLC连接", MB_SYSTEMMODAL|MB_ICONEXCLAMATION|MB_OK);
         return false;
     }
 
@@ -356,7 +356,7 @@ bool CLeakpressDlg::AteqConnect()
     if (info.GetLength() > 0) 
     {
         info += "连接失败";
-        MessageBox(info, "设备连接", MB_OK);
+        MessageBox(info, "设备连接", MB_SYSTEMMODAL|MB_ICONEXCLAMATION|MB_OK); // 显示在所有窗口的最上面
         return false;
     }
 

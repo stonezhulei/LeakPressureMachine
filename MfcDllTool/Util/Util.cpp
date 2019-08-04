@@ -262,7 +262,7 @@ bool DllInit()
 }
 
 //判断管理员权限
-bool IsAdmin()
+BOOL IsAdmin()
 {
     BOOL b;
     SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
@@ -280,5 +280,28 @@ bool IsAdmin()
     return(b);
 }
 
+BOOL IsSingleton(string title)
+{
+    //单例进程模式
+    static HANDLE hMutex = CreateMutex( NULL, TRUE, title.c_str() );
+    if ( GetLastError() == ERROR_ALREADY_EXISTS )  
+    {
+        HWND FindWnd = ::FindWindow( NULL, title.c_str() );
+        if ( FindWnd )
+        { 
+            ::SetWindowPos( FindWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE );  
+            ::ShowWindow( FindWnd, SW_SHOW ); 
+            ::SetFocus( FindWnd ); 
+        }
+
+        CloseHandle(hMutex);
+        return FALSE;
+    }
+
+    //CloseHandle(hMutex);
+    //ReleaseMutex(hMutex);
+
+    return TRUE;
+}
 }
 
