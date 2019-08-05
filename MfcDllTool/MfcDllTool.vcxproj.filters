@@ -28,6 +28,9 @@
     <Filter Include="COMM">
       <UniqueIdentifier>{0fe7d488-70d0-49e5-b33a-289673dba68b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Dump">
+      <UniqueIdentifier>{7736949c-5c7a-4bd8-b27e-5679ec3dc1c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -74,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="RegReader.cpp">
       <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Dump\MiniDump.cpp">
+      <Filter>Dump</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -139,6 +145,9 @@
     </ClInclude>
     <ClInclude Include="RegReader.h">
       <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Dump\MiniDump.h">
+      <Filter>Dump</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

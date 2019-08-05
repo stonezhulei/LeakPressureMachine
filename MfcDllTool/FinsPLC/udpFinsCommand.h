@@ -10,27 +10,27 @@ using namespace std;
 
 namespace OmronPlc
 {
-	class udpFinsCommand : public IFinsCommand
-	{
-	private:
-		int finsCommandLen;
-		int finsResponseLen;
-		vector<uint8_t> respFins;
-		vector<uint8_t> respFinsData;
-		vector<uint8_t> cmdFins;
-		udpTransport * transport;
-		string lastError;
+    class udpFinsCommand : public IFinsCommand
+    {
+    private:
+        int finsCommandLen;
+        int finsResponseLen;
+        vector<uint8_t> respFins;
+        vector<uint8_t> respFinsData;
+        vector<uint8_t> cmdFins;
+        udpTransport * transport;
+        string lastError;
 
-	public:
-		udpFinsCommand(uint8_t ServiceID = 0x02);
-		~udpFinsCommand();
-		virtual bool PLCConnect();
-		virtual void Close();
-		virtual void SetRemote(string ipaddr, uint16_t port);
-		virtual bool MemoryAreaRead(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count);
-		virtual bool MemoryAreaWrite(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count, uint8_t data[]);
+    public:
+        udpFinsCommand(uint8_t ServiceID = 0x02);
+        ~udpFinsCommand();
+        virtual bool PLCConnect();
+        virtual void Close();
+        virtual void SetRemote(string ipaddr, uint16_t port);
+        virtual bool MemoryAreaRead(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count);
+        virtual bool MemoryAreaWrite(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count, uint8_t data[]);
 
-	private:
-		bool FrameSend(const vector<uint8_t> &data = vector<uint8_t>());
-	};
+    private:
+        bool FrameSend(const vector<uint8_t> &data = vector<uint8_t>());
+    };
 }

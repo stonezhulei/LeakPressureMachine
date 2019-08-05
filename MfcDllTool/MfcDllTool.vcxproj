@@ -51,7 +51,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_USRDLL;DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>pthreads-w32/include;FinsPLC;Util;COMM;Log;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pthreads-w32/include;FinsPLC;Util;COMM;Log;Dump;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -60,6 +60,8 @@
       <AdditionalLibraryDirectories>pthreads-w32/lib/x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>pthreadVC2.lib;pthreadVCE2.lib;pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>$(SolutionDir)$(SolutionName)\DllTool\lib\$(TargetName).lib</ImportLibrary>
+      <ImageHasSafeExceptionHandlers>
+      </ImageHasSafeExceptionHandlers>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -79,7 +81,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_USRDLL;DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>pthreads-w32/include;FinsPLC;Util;COMM;Log;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pthreads-w32/include;FinsPLC;Util;COMM;Log;Dump;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -107,6 +109,7 @@
     <None Include="res\MfcDllTool.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Dump\MiniDump.cpp" />
     <ClCompile Include="FinsPLC\fins.cpp" />
     <ClCompile Include="FinsPLC\tcpFinsCommand.cpp" />
     <ClCompile Include="FinsPLC\tcpTransport.cpp" />
@@ -126,6 +129,7 @@
   <ItemGroup>
     <ClInclude Include="COMM\FmCom_NoActive.h" />
     <ClInclude Include="dllExport.h" />
+    <ClInclude Include="Dump\MiniDump.h" />
     <ClInclude Include="FinsPLC\fins.h" />
     <ClInclude Include="FinsPLC\IFinsCommand.h" />
     <ClInclude Include="FinsPLC\ITransport.h" />

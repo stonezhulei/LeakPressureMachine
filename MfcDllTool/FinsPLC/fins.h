@@ -4,8 +4,8 @@
 #ifndef _UNISTD_H
 
 #define _UNISTD_H 
-#include <io.h> 
-#include <process.h> 
+ #include <io.h> 
+ #include <process.h> 
 #endif /* _UNISTD_H */
 
 #include "IFinsCommand.h"
@@ -14,38 +14,40 @@
 
 namespace OmronPlc
 {
-	enum TransportType
-	{
-		Tcp,
-		Udp,
-		Hostlink
-	};
+    enum TransportType
+    {
+        Tcp,
+        Udp,
+        Hostlink
+    };
 
+    class DLL_API Fins
+    {
+    public:
+        Fins(TransportType TType = TransportType::Tcp);
+        virtual ~Fins();
 
-	class DLL_API Fins
-	{
-	public:
-		Fins(TransportType TType = TransportType::Tcp);
-		virtual ~Fins();
+        bool Connect();
+        void Close();
+        void SetRemote(string ipaddr, uint16_t port=DEFAULT_PORT);
 
-		bool Connect();
-		void Close();
-		void SetRemote(string ipaddr, uint16_t port=DEFAULT_PORT);
+        bool MemoryAreaRead(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count);
+        bool MemoryAreaWrite(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count, uint8_t data[]);
 
-		bool MemoryAreaRead(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count);
-		bool MemoryAreaWrite(MemoryArea area, uint16_t address, uint8_t bit_position, uint16_t count, uint8_t data[]);
+        uint32_t ReadDM(uint16_t address);
+        bool ReadDM(uint16_t address, uint32_t &value);
+        bool ReadDM(uint16_t address, uint16_t &value);
+        bool ReadDM(uint16_t address, int16_t &value);
+        bool ReadDM(uint16_t address, uint8_t data[], uint16_t count);
+        bool ReadDM(uint16_t address, uint16_t data[], uint16_t count);
+        bool WriteDM(uint16_t address, const uint16_t value);
+        bool WriteDM(uint16_t address, uint8_t data[], uint16_t count); // Ð´×Ö·û´®
+        bool ClearDM(uint16_t address, uint16_t count);
+        
+        bool ReadCIOBit(uint16_t address, uint8_t bit_position, bool &value);
+        bool WriteCIOBit(uint16_t address, uint8_t bit_position, const bool value);
 
-		bool ReadDM(uint16_t address, uint16_t &value);
-		bool ReadDM(uint16_t address, int16_t &value);
-		bool ReadDM(uint16_t address, uint16_t data[], uint16_t count);
-		bool WriteDM(uint16_t address, const uint16_t value);
-		bool WriteDM(uint16_t address, uint8_t data[], uint16_t count, bool reserve = true); // Ð´×Ö·û´®
-		bool ClearDM(uint16_t address, uint16_t count);
-
-		bool ReadCIOBit(uint16_t address, uint8_t bit_position, bool &value);
-		bool WriteCIOBit(uint16_t address, uint8_t bit_position, const bool value);
-
-	private:
-		IFinsCommand * _finsCmd;;
-	};
+    private:
+        IFinsCommand * _finsCmd;;
+    };
 }

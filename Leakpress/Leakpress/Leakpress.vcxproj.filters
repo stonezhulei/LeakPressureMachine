@@ -75,6 +75,9 @@
     <ClInclude Include="DllTool\pthread.h">
       <Filter>DllTool</Filter>
     </ClInclude>
+    <ClInclude Include="DllTool\MiniDump.h">
+      <Filter>DllTool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Leakpress.cpp">
